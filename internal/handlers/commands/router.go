@@ -8,7 +8,6 @@ import (
 
 // ParseCommand parses a command from a message
 func ParseInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	// React to only messages not sent by the bot
 	command := i.ApplicationCommandData().Name
 	switch command {
 	case "ping":
