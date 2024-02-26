@@ -18,6 +18,7 @@ func main() {
 	fmt.Println("Starting Weekbot...")
 
 	// Run the core Discord listener
+	// Order here is important so we have a UserID for later
 	bot.Run()
 
 	// Setup the bot's commands
