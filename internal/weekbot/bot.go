@@ -3,6 +3,7 @@ package weekbot
 import (
 	"fmt"
 	"weekbot/internal/handlers/commands"
+	"weekbot/internal/handlers/router"
 	"weekbot/internal/services/discord"
 
 	"github.com/bwmarrin/discordgo"
@@ -67,6 +68,6 @@ func (b *Bot) SetupCommands() {
 	}
 
 	// Bind parsing functions to the bot for chat and interaction commands
-	b.dsc.AddHandler(commands.ParseInteraction)
-	b.dsc.AddHandler(commands.ParseChatCommand)
+	b.dsc.AddHandler(router.ParseInteraction)
+	b.dsc.AddHandler(router.ParseChatCommand)
 }
