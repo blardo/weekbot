@@ -5,12 +5,7 @@ import (
 )
 
 // HandleWeekPoll handles the /poll command
-func HandleWeekPoll(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// React to only messages not sent by the bot
-	if m.Author.ID == s.State.User.ID {
-		return
-	}
-
+func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	// Send a message to the channel
 	s.ChannelMessageSend(m.ChannelID, "Starting the Week Name Poll")
 }

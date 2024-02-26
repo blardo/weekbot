@@ -67,5 +67,6 @@ func (b *Bot) SetupCommands() {
 	}
 
 	// Bind the router to the bot's session
-	b.dsc.AddHandler(commands.ParseCommand)
+	b.dsc.AddHandler(commands.ParseInteraction)
+	b.dsc.AddHandler(commands.ParseChatCommand)
 }
