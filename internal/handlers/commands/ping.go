@@ -5,11 +5,7 @@ import (
 )
 
 // HandlePing handles the /ping command
-func HandlePing(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// React to only messages not sent by the bot
-	if m.Author.ID == s.State.User.ID {
-		return
-	}
+func HandlePing(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	s.ChannelMessageSend(m.ChannelID, "Pong!")
 }
 
