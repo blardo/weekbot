@@ -1,7 +1,8 @@
-package commands
+package router
 
 import (
 	"fmt"
+	"weekbot/internal/handlers/commands"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -16,7 +17,7 @@ func ParseInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		case "ping":
 			s.ChannelMessageSend(i.ChannelID, "Pong!")
 		case "poll":
-			HandleWeekPoll(s, i)
+			commands.HandleWeekPoll(s, i)
 		default:
 			fmt.Println("Unknown command:", i.ApplicationCommandData().Name)
 		}

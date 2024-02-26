@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"syscall"
 	weekbot "weekbot/internal/weekbot"
 )
 
@@ -27,6 +28,7 @@ func main() {
 	// Setup an interrupt listener
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
+	signal.Notify(stop, syscall.SIGTERM)
 
 	// Block until we get an interrupt
 	<-stop
