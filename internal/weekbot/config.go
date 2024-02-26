@@ -7,9 +7,9 @@ type Config struct {
 }
 
 // GetConfig returns the configuration for the bot from the environment
-func GetConfig() *Config {
+func GetConfig() Config {
 	config := Config{
 		DiscordToken: os.Getenv("DISCORD_TOKEN"),
 	}
-	return &config
+	return config
 }

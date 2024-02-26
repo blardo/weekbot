@@ -40,6 +40,17 @@ func (d *DiscordService) Disconnect() error {
 	return d.session.Close()
 }
 
+// AddHandler adds a handler to the Discord session
+func (d *DiscordService) AddHandler(handler interface{}) {
+	d.session.AddHandler(handler)
+}
+
+// AddSlashCommand adds a slash command to the Discord session
+func (d *DiscordService) AddSlashCommand(command *discordgo.ApplicationCommand) error {
+	_, err := d.session.ApplicationCommandCreate("905990240441888778", "", command)
+	return err
+}
+
 // SendMessage sends a message to a channel
 func (d *DiscordService) SendMessage(channelID, message string) error {
 	_, err := d.session.ChannelMessageSend(channelID, message)

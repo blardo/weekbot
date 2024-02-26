@@ -10,7 +10,7 @@ import (
 func main() {
 	// Get the bot configuration and create a new bot
 	config := weekbot.GetConfig()
-	bot, err := weekbot.NewBot(*config)
+	bot, err := weekbot.NewBot(config)
 	if err != nil {
 		fmt.Println("Error creating bot:", err)
 		return
@@ -19,6 +19,9 @@ func main() {
 
 	// Run the core Discord listener
 	bot.Run()
+
+	// Setup the bot's commands
+	bot.SetupCommands()
 
 	// Setup an interrupt listener
 	stop := make(chan os.Signal, 1)
