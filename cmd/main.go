@@ -8,6 +8,7 @@ import (
 )
 
 func main() {
+	// Get the bot configuration and create a new bot
 	config := weekbot.GetConfig()
 	bot, err := weekbot.NewBot(*config)
 	if err != nil {
@@ -16,13 +17,17 @@ func main() {
 	}
 	fmt.Println("Starting Weekbot...")
 
+	// Run the core Discord listener
 	bot.Run()
 
+	// Setup an interrupt listener
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
-	// Wait for a signal to stop the bot
+
+	// Block until we get an interrupt
 	<-stop
 
+	// Clean up and stop the bot
 	bot.Stop()
 	fmt.Println("Shutting down...")
 }

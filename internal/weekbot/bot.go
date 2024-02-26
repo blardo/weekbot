@@ -31,11 +31,13 @@ func NewBot(config Config) (*Bot, error) {
 func (b *Bot) Run() {
 	// Connect to Discord using the token from the config
 	fmt.Println("Connecting to Discord...")
-	err := b.dsc.Connect()
-	if err != nil {
-		fmt.Println("Error connecting to Discord:", err)
-		return
-	}
+	go func() {
+		err := b.dsc.Connect()
+		if err != nil {
+			fmt.Println("Error connecting to Discord:", err)
+			return
+		}
+	}()
 
 	fmt.Println("Shutting down...")
 }
