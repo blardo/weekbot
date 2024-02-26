@@ -4,11 +4,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// HandlePing handles the /ping command
-func HandlePing(s *discordgo.Session, m *discordgo.InteractionCreate) {
-	s.ChannelMessageSend(m.ChannelID, "Pong!")
-}
-
+// GetPingCommand returns the ping command
 func GetPingCommand() *discordgo.ApplicationCommand {
 	pingCommand := &discordgo.ApplicationCommand{
 		Name:        "ping",

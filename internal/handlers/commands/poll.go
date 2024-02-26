@@ -7,28 +7,19 @@ import (
 // HandleWeekPoll handles the /poll command
 func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	// Send a message to the channel
-	s.ChannelMessageSend(m.ChannelID, "Starting the Week Name Poll")
+	s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "Polls are not yet implemented",
+		},
+	})
 }
 
 func GetPollCommand() *discordgo.ApplicationCommand {
 	pollCommand := &discordgo.ApplicationCommand{
 		Name:        "poll",
-		Description: "Create a poll",
+		Description: "Run the Week Name Poll",
 		Type:        discordgo.ChatApplicationCommand,
-		Options: []*discordgo.ApplicationCommandOption{
-			{
-				Type:        discordgo.ApplicationCommandOptionString,
-				Name:        "question",
-				Description: "The question to ask",
-				Required:    true,
-			},
-			{
-				Type:        discordgo.ApplicationCommandOptionString,
-				Name:        "options",
-				Description: "The options to choose from",
-				Required:    true,
-			},
-		},
 	}
 	return pollCommand
 }

@@ -8,14 +8,20 @@ import (
 
 // ParseCommand parses a command from a message
 func ParseInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	command := i.ApplicationCommandData().Name
+	command := i.Type
+
 	switch command {
-	case "ping":
-		HandlePing(s, i)
-	case "poll":
-		HandleWeekPoll(s, i)
-	default:
-		fmt.Println("Unknown command:", command)
+	case discordgo.InteractionApplicationCommand:
+		switch i.ApplicationCommandData().Name {
+		case "ping":
+			s.ChannelMessageSend(i.ChannelID, "Pong!")
+		case "poll":
+			HandleWeekPoll(s, i)
+		default:
+			fmt.Println("Unknown command:", i.ApplicationCommandData().Name)
+		}
+	default: // Ignore other types of interactions
+		return
 	}
 }
 
