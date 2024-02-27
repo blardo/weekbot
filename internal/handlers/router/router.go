@@ -31,7 +31,10 @@ func ParseInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case discordgo.InteractionApplicationCommand:
 		switch i.ApplicationCommandData().Name {
 		case "ping":
-			s.ChannelMessageSend(i.ChannelID, "Pong!")
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{Content: "Pong!"},
+			})
 		case "poll":
 			commands.HandleWeekPoll(s, i)
 		default:
