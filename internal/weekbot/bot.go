@@ -45,14 +45,18 @@ func (b *Bot) Run() {
 	fmt.Println("Shutting down...")
 }
 
+// Stop is a scaffolded function to stop the bot
 func (b *Bot) Stop() {
 	b.dsc.Disconnect()
 }
 
+// This passthrough function allows the bot to add handlers to the Discord client
+// and also feels awful to write
 func (b *Bot) AddHandler(handler interface{}) {
 	b.dsc.AddHandler(handler)
 }
 
+// Initialize the bot's commands from the commands package
 func (b *Bot) SetupCommands() {
 	// Setup the bot's commands
 	commandlist := []*discordgo.ApplicationCommand{
@@ -67,7 +71,8 @@ func (b *Bot) SetupCommands() {
 		}
 	}
 
-	// Bind parsing functions to the bot for chat and interaction commands
+	// Bind routing handlers to the bot
 	b.dsc.AddHandler(router.ParseInteraction)
 	b.dsc.AddHandler(router.ParseChatCommand)
+	b.dsc.AddHandler(router.HandleReactions)
 }

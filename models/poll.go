@@ -1,40 +1,35 @@
-package poll
+package models
+
+import "gorm.io/gorm"
 
 // Poll is a struct that represents a poll
 type Poll struct {
-	Options    []string
-	Votes      map[string]int
-	InProgress bool
+	gorm.Model
+	Suggestions []Suggestion
+	InProgress  bool
+	UpNext      bool
 }
 
 // NewPoll creates a new poll from the most recent suggestions
-func NewPoll(suggestions []string) *Poll {
+func NewPoll(suggestions []Suggestion) *Poll {
 	return &Poll{
-		Options:    suggestions,
-		Votes:      make(map[string]int),
-		InProgress: true,
+		Suggestions: suggestions,
+		InProgress:  true,
+		UpNext:      true,
 	}
 }
 
-// Vote adds a vote to the poll
-func (p *Poll) Vote(option string) {
-	p.Votes[option]++
-}
-
-// Winner returns the winning option
-func (p *Poll) Winner() string {
-	winner := ""
-	maxVotes := 0
-	for option, votes := range p.Votes {
-		if votes > maxVotes {
-			winner = option
-			maxVotes = votes
-		}
-	}
-	return winner
+// AddSuggestion adds a suggestion to the poll
+func (p *Poll) AddSuggestion(suggestion Suggestion) {
+	p.Suggestions = append(p.Suggestions, suggestion)
 }
 
 // IsComplete returns true if the poll is complete
 func (p *Poll) IsComplete() bool {
-	return len(p.Votes) > 0 && p.InProgress
+	return !p.InProgress
+}
+
+// GetCurrentPoll returns the current poll from the database
+func GetCurrentPoll() *Poll {
+	return &Poll{}
 }
