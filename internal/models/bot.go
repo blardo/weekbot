@@ -1,19 +1,20 @@
-package weekbot
+package models
 
 import (
 	"fmt"
-	"weekbot/internal/handlers/router"
+	"weekbot/internal/router"
+	"weekbot/internal/services"
 	"weekbot/internal/services/discord"
 )
 
 // Bot is the main struct for the weekbot package
 type Bot struct {
-	config *Config
+	config *services.Config
 	dsc    *discord.DiscordService
 	router *router.Router
 }
 
-func NewBot(config *Config, router *router.Router) (*Bot, error) {
+func NewBot(config *services.Config, router *router.Router) (*Bot, error) {
 	discordService, err := discord.NewDiscordService(config.DiscordToken)
 	if err != nil {
 		fmt.Println("Error Configuring Discord Client:", err)

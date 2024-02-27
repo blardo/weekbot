@@ -6,9 +6,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"weekbot/internal/handlers/router"
-	"weekbot/internal/weekbot"
-	"weekbot/models"
+	"weekbot/internal/models"
+	"weekbot/internal/router"
+	"weekbot/internal/services"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -25,9 +25,9 @@ func main() {
 	db.AutoMigrate(&models.Poll{})
 
 	// Get the bot configuration and create a new bot
-	config := weekbot.GetConfig(db)
+	config := services.GetConfig(db)
 	router := router.NewRouter()
-	bot, err := weekbot.NewBot(config, router)
+	bot, err := models.NewBot(config, router)
 	if err != nil {
 		fmt.Println("Error creating bot:", err)
 		return
