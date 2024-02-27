@@ -2,6 +2,7 @@ package router
 
 import (
 	"fmt"
+	"strings"
 	"weekbot/internal/handlers/commands"
 
 	"github.com/bwmarrin/discordgo"
@@ -31,5 +32,21 @@ func ParseChatCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
-	// TODO: Parse the message into a command
+	// If the message ends in the word week, add it to the list of suggestions for the poll
+	message := strings.Split(m.Content, " ")
+	if message[len(message)-1] == "Week" || message[len(message)-1] == "week" {
+		commands.HandleWeekSuggestion(s, m)
+
+	}
+}
+
+func HandleReactions(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
+	// React to only messages not sent by the bot
+	if r.UserID == s.State.User.ID {
+		return
+	}
+
+	if r.Emoji.Name == "bd" {
+		s.MessageReactionAdd(r.ChannelID, r.MessageID, "👍")
+	}
 }

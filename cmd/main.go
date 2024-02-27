@@ -5,12 +5,26 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	weekbot "weekbot/internal/weekbot"
+
+	"weekbot/internal/weekbot"
+	"weekbot/models"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 func main() {
+	// Connect to the database
+	db, err := gorm.Open(sqlite.Open("weekbot.db"), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
+	}
+
+	// Migrate the schema
+	db.AutoMigrate(&models.Poll{})
+
 	// Get the bot configuration and create a new bot
-	config := weekbot.GetConfig()
+	config := weekbot.GetConfig(db)
 	bot, err := weekbot.NewBot(config)
 	if err != nil {
 		fmt.Println("Error creating bot:", err)
