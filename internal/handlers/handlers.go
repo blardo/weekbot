@@ -38,10 +38,13 @@ func ParseChatCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	// If the message ends in the word week, add it to the list of suggestions for the poll
 	message := strings.Split(m.Content, " ")
-	if message[len(message)-1] == "Week" || message[len(message)-1] == "week" {
-		commands.HandleWeekSuggestion(s, m)
-
-	}
+	acceptableWeeks := []string{"week", "Week", "week.", "Week.", "week!", "Week!", "week?", "Week?"}
+		for _, week := range acceptableWeeks {
+			if message[len(message)-1] == week{
+				commands.HandleWeekSuggestion(s, m)
+				break
+			}
+		}
 }
 
 func HandleReactions(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
