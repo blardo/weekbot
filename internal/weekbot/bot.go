@@ -2,20 +2,18 @@ package weekbot
 
 import (
 	"fmt"
-	"weekbot/internal/handlers/commands"
 	"weekbot/internal/handlers/router"
 	"weekbot/internal/services/discord"
-
-	"github.com/bwmarrin/discordgo"
 )
 
 // Bot is the main struct for the weekbot package
 type Bot struct {
 	config *Config
 	dsc    *discord.DiscordService
+	router *router.Router
 }
 
-func NewBot(config Config) (*Bot, error) {
+func NewBot(config *Config, router *router.Router) (*Bot, error) {
 	discordService, err := discord.NewDiscordService(config.DiscordToken)
 	if err != nil {
 		fmt.Println("Error Configuring Discord Client:", err)
@@ -23,15 +21,16 @@ func NewBot(config Config) (*Bot, error) {
 	}
 
 	bot := &Bot{
-		config: &config,
+		config: config,
 		dsc:    discordService,
+		router: router,
 	}
 
 	return bot, nil
 }
 
-// Run starts the bot
-func (b *Bot) Run() {
+// Run starts the bot, connects to Discord, and sets up the router
+func (b *Bot) Start() {
 	// Connect to Discord using the token from the config
 	fmt.Println("Connecting to Discord...")
 	go func() {
@@ -40,9 +39,8 @@ func (b *Bot) Run() {
 			fmt.Println("Error connecting to Discord:", err)
 			return
 		}
+		b.router.Setup(b.dsc)
 	}()
-
-	fmt.Println("Shutting down...")
 }
 
 // Stop is a scaffolded function to stop the bot
@@ -50,29 +48,7 @@ func (b *Bot) Stop() {
 	b.dsc.Disconnect()
 }
 
-// This passthrough function allows the bot to add handlers to the Discord client
-// and also feels awful to write
-func (b *Bot) AddHandler(handler interface{}) {
-	b.dsc.AddHandler(handler)
-}
-
-// Initialize the bot's commands from the commands package
-func (b *Bot) SetupCommands() {
-	// Setup the bot's commands
-	commandlist := []*discordgo.ApplicationCommand{
-		commands.GetPingCommand(),
-		commands.GetPollCommand(),
-	}
-
-	for _, command := range commandlist {
-		err := b.dsc.AddSlashCommand(command)
-		if err != nil {
-			fmt.Println("Error adding command:", err)
-		}
-	}
-
-	// Bind routing handlers to the bot
-	b.dsc.AddHandler(router.ParseInteraction)
-	b.dsc.AddHandler(router.ParseChatCommand)
-	b.dsc.AddHandler(router.HandleReactions)
+// Connected is a shorthand function to check if the bot is connected to Discord
+func (b *Bot) Connected() bool {
+	return b.dsc.Connected()
 }

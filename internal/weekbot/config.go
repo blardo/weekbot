@@ -7,15 +7,15 @@ import (
 )
 
 type Config struct {
-	DiscordToken       string
-	DataBaseConnection *gorm.DB
+	DiscordToken string
+	DB           *gorm.DB
 }
 
 // GetConfig returns the configuration for the bot from the environment
-func GetConfig(db *gorm.DB) Config {
+func GetConfig(db *gorm.DB) *Config {
 	config := Config{
-		DiscordToken:       os.Getenv("DISCORD_TOKEN"),
-		DataBaseConnection: db,
+		DiscordToken: os.Getenv("DISCORD_TOKEN"),
+		DB:           db,
 	}
-	return config
+	return &config
 }

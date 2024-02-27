@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"weekbot/internal/handlers/router"
 	"weekbot/internal/weekbot"
 	"weekbot/models"
 
@@ -25,19 +26,17 @@ func main() {
 
 	// Get the bot configuration and create a new bot
 	config := weekbot.GetConfig(db)
-	bot, err := weekbot.NewBot(config)
+	router := router.NewRouter()
+	bot, err := weekbot.NewBot(config, router)
 	if err != nil {
 		fmt.Println("Error creating bot:", err)
 		return
 	}
 	fmt.Println("Starting Weekbot...")
 
-	// Run the core Discord listener
+	// Start the core Discord listener
 	// Order here is important so we have a UserID for later
-	bot.Run()
-
-	// Setup the bot's commands
-	bot.SetupCommands()
+	bot.Start()
 
 	// Setup an interrupt listener
 	stop := make(chan os.Signal, 1)
