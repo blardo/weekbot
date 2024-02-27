@@ -1,4 +1,4 @@
-package weekbot
+package services
 
 import (
 	"os"
