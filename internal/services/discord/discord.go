@@ -56,3 +56,8 @@ func (d *DiscordService) SendMessage(channelID, message string) error {
 	_, err := d.session.ChannelMessageSend(channelID, message)
 	return err
 }
+
+// Connected returns true if the bot is connected to Discord
+func (d *DiscordService) Connected() bool {
+	return d.session.State != nil && d.session.State.User != nil
+}

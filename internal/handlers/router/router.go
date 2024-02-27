@@ -4,9 +4,24 @@ import (
 	"fmt"
 	"strings"
 	"weekbot/internal/handlers/commands"
+	"weekbot/internal/services/discord"
 
 	"github.com/bwmarrin/discordgo"
 )
+
+type Router struct {
+}
+
+func NewRouter() *Router {
+	return &Router{}
+}
+
+// Setup adds the bot's handlers to the Discord client
+func (r *Router) Setup(ds *discord.DiscordService) {
+	ds.AddHandler(ParseInteraction)
+	ds.AddHandler(ParseChatCommand)
+	ds.AddHandler(HandleReactions)
+}
 
 // ParseCommand parses a command from a message
 func ParseInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {

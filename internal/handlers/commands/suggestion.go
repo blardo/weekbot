@@ -18,9 +18,8 @@ func HandleWeekSuggestion(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Create a new suggestion
-	suggestion := &models.Suggestion{}
-	suggestion.NewSuggestion(m.Content)
+	// Create a new suggestion from the message
+	suggestion := models.NewSuggestion(m.Content)
 	fmt.Println("Adding suggestion:", suggestion)
 	s.ChannelMessageSend(m.ChannelID, "Week suggestion added: "+m.Content)
 }

@@ -30,6 +30,8 @@ func (p *Poll) IsComplete() bool {
 }
 
 // GetCurrentPoll returns the current poll from the database
-func GetCurrentPoll() *Poll {
-	return &Poll{}
+func GetCurrentPoll(db gorm.DB) *Poll {
+	var poll Poll
+	db.Where("in_progress = ?", true).First(&poll)
+	return &poll
 }
