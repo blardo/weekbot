@@ -26,8 +26,9 @@ func main() {
 
 	// Get the bot configuration and create a new bot
 	config := services.GetConfig(db)
-	router := router.NewRouter()
-	bot, err := models.NewBot(config, router)
+	bot, err := models.NewBot(config)
+
+
 	if err != nil {
 		fmt.Println("Error creating bot:", err)
 		return
@@ -36,6 +37,8 @@ func main() {
 
 	// Start the core Discord listener
 	// Order here is important so we have a UserID for later
+	bot = router.ConfigureBot(bot)
+	bot = router.SetCommands(bot)
 	bot.Start()
 
 	// Setup an interrupt listener
