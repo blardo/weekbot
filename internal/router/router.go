@@ -1,20 +1,24 @@
 package router
 
 import (
+	"weekbot/internal/commands"
 	"weekbot/internal/handlers"
-	"weekbot/internal/services/discord"
+	"weekbot/internal/models"
 )
 
-type Router struct {
+
+
+func ConfigureBot(b *models.Bot) *models.Bot{
+	b.DSC.AddHandler(handlers.ParseInteraction)
+	b.DSC.AddHandler(handlers.ParseChatCommand)
+	b.DSC.AddHandler(handlers.HandleReactions)
+	return b
 }
 
-func NewRouter() *Router {
-	return &Router{}
+func SetCommands(b *models.Bot) *models.Bot{
+	b.DSC.AddSlashCommand(commands.GetPingCommand())
+	b.DSC.AddSlashCommand(commands.GetPollCommand())
+	return b
 }
 
-// Setup adds the bot's handlers to the Discord client
-func (r *Router) Setup(ds *discord.DiscordService) {
-	ds.AddHandler(handlers.ParseInteraction)
-	ds.AddHandler(handlers.ParseChatCommand)
-	ds.AddHandler(handlers.HandleReactions)
-}
+

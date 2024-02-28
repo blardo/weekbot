@@ -2,7 +2,6 @@ package models
 
 import (
 	"fmt"
-	"weekbot/internal/router"
 	"weekbot/internal/services"
 	"weekbot/internal/services/discord"
 )
@@ -10,11 +9,12 @@ import (
 // Bot is the main struct for the weekbot package
 type Bot struct {
 	config *services.Config
-	dsc    *discord.DiscordService
-	router *router.Router
+	DSC    *discord.DiscordService
+
 }
 
-func NewBot(config *services.Config, router *router.Router) (*Bot, error) {
+func NewBot(config *services.Config) (*Bot, error) {
+
 	discordService, err := discord.NewDiscordService(config.DiscordToken)
 	if err != nil {
 		fmt.Println("Error Configuring Discord Client:", err)
@@ -23,8 +23,8 @@ func NewBot(config *services.Config, router *router.Router) (*Bot, error) {
 
 	bot := &Bot{
 		config: config,
-		dsc:    discordService,
-		router: router,
+		DSC:    discordService,
+
 	}
 
 	return bot, nil
@@ -35,21 +35,22 @@ func (b *Bot) Start() {
 	// Connect to Discord using the token from the config
 	fmt.Println("Connecting to Discord...")
 	go func() {
-		err := b.dsc.Connect()
+		err := b.DSC.Connect()
 		if err != nil {
 			fmt.Println("Error connecting to Discord:", err)
 			return
 		}
-		b.router.Setup(b.dsc)
 	}()
 }
 
 // Stop is a scaffolded function to stop the bot
 func (b *Bot) Stop() {
-	b.dsc.Disconnect()
+	b.DSC.Disconnect()
 }
 
 // Connected is a shorthand function to check if the bot is connected to Discord
 func (b *Bot) Connected() bool {
-	return b.dsc.Connected()
+	return b.DSC.Connected()
 }
+
+

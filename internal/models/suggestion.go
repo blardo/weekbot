@@ -16,6 +16,6 @@ func NewSuggestion(weekName string) *Suggestion {
 	return &Suggestion{
 		WeekName: weekName,
 		Selected: false,
-		Updicks:  0,
+		Updicks:  0, 
 	}
 }
