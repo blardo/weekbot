@@ -3,22 +3,18 @@ package router
 import (
 	"weekbot/internal/commands"
 	"weekbot/internal/handlers"
-	"weekbot/internal/models"
+	"weekbot/internal/services/discord"
 )
 
-
-
-func ConfigureBot(b *models.Bot) *models.Bot{
-	b.DSC.AddHandler(handlers.ParseInteraction)
-	b.DSC.AddHandler(handlers.ParseChatCommand)
-	b.DSC.AddHandler(handlers.HandleReactions)
-	return b
+func ConfigureHandlers(dsc *discord.DiscordService) *discord.DiscordService {
+	dsc.AddHandler(handlers.ParseInteraction)
+	dsc.AddHandler(handlers.ParseChatCommand)
+	dsc.AddHandler(handlers.HandleReactions)
+	return dsc
 }
 
-func SetCommands(b *models.Bot) *models.Bot{
-	b.DSC.AddSlashCommand(commands.GetPingCommand())
-	b.DSC.AddSlashCommand(commands.GetPollCommand())
-	return b
+func SetCommands(dsc *discord.DiscordService) *discord.DiscordService {
+	dsc.AddSlashCommand(commands.GetPingCommand())
+	dsc.AddSlashCommand(commands.GetPollCommand())
+	return dsc
 }
-
-

@@ -9,37 +9,38 @@ import (
 	"weekbot/internal/models"
 	"weekbot/internal/router"
 	"weekbot/internal/services"
-
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
+	"weekbot/internal/services/discord"
 )
 
 func main() {
-	// Connect to the database
-	db, err := gorm.Open(sqlite.Open("weekbot.db"), &gorm.Config{})
+	config := services.GetConfig()
+
+	discordService, err := discord.NewDiscordService(config.DiscordToken)
 	if err != nil {
-		panic("failed to connect database")
-	}
-
-	// Migrate the schema
-	db.AutoMigrate(&models.Poll{})
-
-	// Get the bot configuration and create a new bot
-	config := services.GetConfig(db)
-	bot, err := models.NewBot(config)
-
-
-	if err != nil {
-		fmt.Println("Error creating bot:", err)
+		fmt.Println("Error creating Discord service:", err)
 		return
 	}
-	fmt.Println("Starting Weekbot...")
 
-	// Start the core Discord listener
-	// Order here is important so we have a UserID for later
-	bot = router.ConfigureBot(bot)
-	bot = router.SetCommands(bot)
-	bot.Start()
+	// Configure the handlers
+	discordService = router.ConfigureHandlers(discordService)
+	discordService = router.SetCommands(discordService)
+
+	// Connect to Discord using the token from the config
+	fmt.Println("Connecting to Discord...")
+	err = discordService.Connect()
+	if err != nil {
+		fmt.Println("Error connecting to Discord:", err)
+		return
+	}
+
+	// Create a new bot instance for each guild
+	for _, guild := range discordService.GetGuilds() {
+		_, err := models.NewBot(config, guild.ID)
+		if err != nil {
+			fmt.Println("Error creating bot:", err)
+			return
+		}
+	}
 
 	// Setup an interrupt listener
 	stop := make(chan os.Signal, 1)
@@ -49,7 +50,5 @@ func main() {
 	// Block until we get an interrupt
 	<-stop
 
-	// Clean up and stop the bot
-	bot.Stop()
 	fmt.Println("Shutting down...")
 }
