@@ -4,53 +4,65 @@ import (
 	"fmt"
 	"weekbot/internal/services"
 	"weekbot/internal/services/discord"
+
+	"gorm.io/gorm"
 )
 
-// Bot is the main struct for the weekbot package
-type Bot struct {
-	config *services.Config
-	DSC    *discord.DiscordService
+var botInstances = make(map[string]*Bot)
 
+// Holder of all basic state for each bot instance. This is the primary interface
+// for the bot to interact with Discord.
+
+type Bot struct {
+	GuildID string
+	Config  *services.Config
+	DB      *gorm.DB
 }
 
-func NewBot(config *services.Config) (*Bot, error) {
-
-	discordService, err := discord.NewDiscordService(config.DiscordToken)
+func NewBot(config *services.Config, gid string) (*Bot, error) {
+	db, err := services.GetDB(gid)
 	if err != nil {
-		fmt.Println("Error Configuring Discord Client:", err)
 		return nil, err
 	}
 
 	bot := &Bot{
-		config: config,
-		DSC:    discordService,
-
+		Config:  config,
+		GuildID: gid,
+		DB:      db,
 	}
+
+	configureSchema(db)
+
+	botInstances[gid] = bot
+
+	fmt.Println("Connected to guild", gid)
 
 	return bot, nil
 }
 
-// Run starts the bot, connects to Discord, and sets up the router
-func (b *Bot) Start() {
-	// Connect to Discord using the token from the config
-	fmt.Println("Connecting to Discord...")
-	go func() {
-		err := b.DSC.Connect()
-		if err != nil {
-			fmt.Println("Error connecting to Discord:", err)
-			return
-		}
-	}()
+func GetBot(guildID string) *Bot {
+	return botInstances[guildID]
 }
 
-// Stop is a scaffolded function to stop the bot
-func (b *Bot) Stop() {
-	b.DSC.Disconnect()
+func GetBotInstances() map[string]*Bot {
+	return botInstances
 }
 
-// Connected is a shorthand function to check if the bot is connected to Discord
-func (b *Bot) Connected() bool {
-	return b.DSC.Connected()
+func (b *Bot) SendMessage(channelID, message string) error {
+	discordService, err := discord.GetDiscordService()
+	if err != nil {
+		return err
+	}
+
+	return discordService.SendMessage(channelID, message)
 }
 
+func (b *Bot) StartPoll() *Poll {
+	fmt.Println("Starting poll")
+	return StartPoll(b)
+}
 
+func configureSchema(db *gorm.DB) {
+	db.AutoMigrate(&Suggestion{})
+	db.AutoMigrate(&Poll{})
+}

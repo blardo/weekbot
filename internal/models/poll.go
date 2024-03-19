@@ -1,27 +1,29 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
 // Poll is a struct that represents a poll
 type Poll struct {
 	gorm.Model
 	Suggestions []Suggestion
 	InProgress  bool
-	UpNext      bool
 }
 
-// NewPoll creates a new poll from the most recent suggestions
-func NewPoll(suggestions []Suggestion) *Poll {
-	return &Poll{
+// StartPoll creates a new poll from the most recent suggestions
+func StartPoll(bot *Bot) *Poll {
+	current := GetCurrentPoll(bot.DB)
+	if current != nil {
+		return current
+	}
+	suggestions := GetMostRecentUnusedSuggestions(bot.DB)
+	poll := &Poll{
 		Suggestions: suggestions,
 		InProgress:  true,
-		UpNext:      true,
 	}
-}
-
-// AddSuggestion adds a suggestion to the poll
-func (p *Poll) AddSuggestion(suggestion Suggestion) {
-	p.Suggestions = append(p.Suggestions, suggestion)
+	bot.DB.Create(poll)
+	return poll
 }
 
 // IsComplete returns true if the poll is complete
@@ -30,8 +32,12 @@ func (p *Poll) IsComplete() bool {
 }
 
 // GetCurrentPoll returns the current poll from the database
-func GetCurrentPoll(db gorm.DB) *Poll {
+func GetCurrentPoll(db *gorm.DB) *Poll {
 	var poll Poll
 	db.Where("in_progress = ?", true).First(&poll)
+	if poll.ID == 0 {
+		return nil
+	}
+
 	return &poll
 }
