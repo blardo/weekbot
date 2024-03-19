@@ -57,11 +57,6 @@ func (b *Bot) SendMessage(channelID, message string) error {
 	return discordService.SendMessage(channelID, message)
 }
 
-func (b *Bot) StartPoll() *Poll {
-	fmt.Println("Starting poll")
-	return StartPoll(b)
-}
-
 func configureSchema(db *gorm.DB) {
 	db.AutoMigrate(&Suggestion{})
 	db.AutoMigrate(&Poll{})

@@ -20,10 +20,6 @@ func NewSuggestion(db *gorm.DB, content string) *Suggestion {
 	return s
 }
 
-func (s *Suggestion) String() string {
-	return s.Content
-}
-
 func GetMostRecentUnusedSuggestions(db *gorm.DB) []Suggestion {
 	var suggestions []Suggestion
 	db.Where("used = ?", false).Find(&suggestions)

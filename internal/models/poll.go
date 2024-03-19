@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+
 	"gorm.io/gorm"
 )
 
@@ -9,33 +11,40 @@ type Poll struct {
 	gorm.Model
 	Suggestions []Suggestion
 	InProgress  bool
+	IsComplete  bool
 }
 
-// StartPoll creates a new poll from the most recent suggestions
-func StartPoll(bot *Bot) *Poll {
-	current := GetCurrentPoll(bot.DB)
-	if current != nil {
-		return current
+func NewOrCurrentPoll(bot *Bot) *Poll {
+	poll := GetCurrentPoll(bot.DB)
+	if poll != nil {
+		return poll
 	}
+
 	suggestions := GetMostRecentUnusedSuggestions(bot.DB)
-	poll := &Poll{
+	if len(suggestions) == 0 {
+		fmt.Println("No suggestions found")
+		return nil
+	}
+
+	for i := range suggestions {
+		suggestions[i].Used = true
+		bot.DB.Save(&suggestions[i])
+	}
+
+	poll = &Poll{
 		Suggestions: suggestions,
 		InProgress:  true,
 	}
+
 	bot.DB.Create(poll)
 	return poll
 }
 
-// IsComplete returns true if the poll is complete
-func (p *Poll) IsComplete() bool {
-	return !p.InProgress
-}
-
-// GetCurrentPoll returns the current poll from the database
 func GetCurrentPoll(db *gorm.DB) *Poll {
 	var poll Poll
-	db.Where("in_progress = ?", true).First(&poll)
+	db.Preload("Suggestions").Where("in_progress = ? and is_complete = ?", true, false).First(&poll)
 	if poll.ID == 0 {
+		fmt.Println("No current poll found")
 		return nil
 	}
 
