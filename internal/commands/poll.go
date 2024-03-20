@@ -40,24 +40,6 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	})
 }
 
-func GetPollCommand() *discordgo.ApplicationCommand {
-	pollCommand := &discordgo.ApplicationCommand{
-		Name:        "poll",
-		Description: "Run the Week Name Poll",
-		Type:        discordgo.ChatApplicationCommand,
-	}
-	return pollCommand
-}
-
-func EndPollCommand() *discordgo.ApplicationCommand {
-	pollCommand := &discordgo.ApplicationCommand{
-		Name:        "endpoll",
-		Description: "End the Week Name Poll",
-		Type:        discordgo.ChatApplicationCommand,
-	}
-	return pollCommand
-}
-
 func HandleEndPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	bot := models.GetBot(m.GuildID)
 
@@ -82,4 +64,22 @@ func HandleEndPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 			Content: "The poll has been ended",
 		},
 	})
+}
+
+func GetPollCommand() *discordgo.ApplicationCommand {
+	pollCommand := &discordgo.ApplicationCommand{
+		Name:        "poll",
+		Description: "Run the Week Name Poll",
+		Type:        discordgo.ChatApplicationCommand,
+	}
+	return pollCommand
+}
+
+func EndPollCommand() *discordgo.ApplicationCommand {
+	pollCommand := &discordgo.ApplicationCommand{
+		Name:        "endpoll",
+		Description: "End the Week Name Poll",
+		Type:        discordgo.ChatApplicationCommand,
+	}
+	return pollCommand
 }
