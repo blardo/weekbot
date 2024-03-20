@@ -9,9 +9,7 @@ import (
 
 var botInstances = make(map[string]*Bot)
 
-// Holder of all basic state for each bot instance. This is the primary interface
-// for the bot to interact with Discord.
-
+// Holder of all basic state for each bot instance.
 type Bot struct {
 	GuildID string
 	Config  *services.Config

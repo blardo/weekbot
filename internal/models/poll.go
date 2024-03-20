@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 
+	"github.com/bwmarrin/discordgo"
 	"gorm.io/gorm"
 )
 
@@ -49,4 +50,18 @@ func GetCurrentPoll(db *gorm.DB) *Poll {
 	}
 
 	return &poll
+}
+
+func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
+	var options []discordgo.SelectMenuOption
+	for _, suggestion := range p.Suggestions {
+		options = append(options, discordgo.SelectMenuOption{
+			Label:   suggestion.Content,
+			Value:   suggestion.Content,
+			Default: false,
+			Emoji:   discordgo.ComponentEmoji{Name: "📅"},
+		})
+	}
+
+	return options
 }

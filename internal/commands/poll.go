@@ -22,20 +22,36 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 		return
 	}
 
-	var response string
-	if poll.IsComplete {
-		response = "The poll is already complete for the week"
-	} else {
-		response = "The poll has started. The suggestions are: \n"
-		for _, suggestion := range poll.Suggestions {
-			response += suggestion.Content + "\n"
-		}
-	}
-
-	s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: response,
+	s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+		Content: "Poll has started",
+		Components: []discordgo.MessageComponent{
+			&discordgo.ActionsRow{
+				Components: []discordgo.MessageComponent{
+					discordgo.SelectMenu{
+						CustomID:    "first_choice",
+						Placeholder: "Select a week",
+						Options:     poll.GetSelectOptions(),
+					},
+				},
+			},
+			&discordgo.ActionsRow{
+				Components: []discordgo.MessageComponent{
+					discordgo.SelectMenu{
+						CustomID:    "second_choice",
+						Placeholder: "Select a week",
+						Options:     poll.GetSelectOptions(),
+					},
+				},
+			},
+			&discordgo.ActionsRow{
+				Components: []discordgo.MessageComponent{
+					discordgo.SelectMenu{
+						CustomID:    "third_choice",
+						Placeholder: "Select a week",
+						Options:     poll.GetSelectOptions(),
+					},
+				},
+			},
 		},
 	})
 }
