@@ -3,7 +3,6 @@ package models
 import (
 	"fmt"
 	"weekbot/internal/services"
-	"weekbot/internal/services/discord"
 
 	"gorm.io/gorm"
 )
@@ -46,15 +45,6 @@ func GetBot(guildID string) *Bot {
 
 func GetBotInstances() map[string]*Bot {
 	return botInstances
-}
-
-func (b *Bot) SendMessage(channelID, message string) error {
-	discordService, err := discord.GetDiscordService()
-	if err != nil {
-		return err
-	}
-
-	return discordService.SendMessage(channelID, message)
 }
 
 func configureSchema(db *gorm.DB) {
