@@ -6,12 +6,18 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+var discordConnection *DiscordService
+
 // DiscordService is your primary interface to Discord from the bot
 type DiscordService struct {
 	session *discordgo.Session
 }
 
 func NewDiscordService(token string) (*DiscordService, error) {
+	// Check if we already have an instance
+	if discordConnection != nil {
+		return discordConnection, nil
+	}
 	session, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return nil, err
@@ -21,13 +27,18 @@ func NewDiscordService(token string) (*DiscordService, error) {
 		fmt.Println("Connected to Discord as", m.User.Username)
 		fmt.Println("Invite URL: https://discordapp.com/oauth2/authorize?client_id=" + m.User.ID + "&scope=bot&permissions=0")
 		fmt.Println("Currently on", len(m.Guilds), "servers")
-		// Print out the servers we're on
-		for _, guild := range m.Guilds {
-			fmt.Println("  ", guild.Name, "(", guild.ID, ")")
-		}
 	})
 
-	return &DiscordService{session}, nil
+	discordConnection = &DiscordService{session}
+
+	return discordConnection, nil
+}
+
+func GetDiscordService() (*DiscordService, error) {
+	if discordConnection == nil {
+		return nil, fmt.Errorf("Discord service not initialized")
+	}
+	return discordConnection, nil
 }
 
 // Connect connects to Discord
@@ -60,4 +71,9 @@ func (d *DiscordService) SendMessage(channelID, message string) error {
 // Connected returns true if the bot is connected to Discord
 func (d *DiscordService) Connected() bool {
 	return d.session.State != nil && d.session.State.User != nil
+}
+
+// GetGuilds returns the guilds the bot is on
+func (d *DiscordService) GetGuilds() []*discordgo.Guild {
+	return d.session.State.Guilds
 }

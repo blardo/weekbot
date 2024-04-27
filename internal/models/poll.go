@@ -1,37 +1,67 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"fmt"
+
+	"github.com/bwmarrin/discordgo"
+	"gorm.io/gorm"
+)
 
 // Poll is a struct that represents a poll
 type Poll struct {
 	gorm.Model
 	Suggestions []Suggestion
 	InProgress  bool
-	UpNext      bool
+	IsComplete  bool
 }
 
-// NewPoll creates a new poll from the most recent suggestions
-func NewPoll(suggestions []Suggestion) *Poll {
-	return &Poll{
+func NewOrCurrentPoll(bot *Bot) *Poll {
+	poll := GetCurrentPoll(bot.DB)
+	if poll != nil {
+		return poll
+	}
+
+	suggestions := GetMostRecentUnusedSuggestions(bot.DB)
+	if len(suggestions) == 0 {
+		fmt.Println("No suggestions found")
+		return nil
+	}
+
+	for i := range suggestions {
+		suggestions[i].Used = true
+		bot.DB.Save(&suggestions[i])
+	}
+
+	poll = &Poll{
 		Suggestions: suggestions,
 		InProgress:  true,
-		UpNext:      true,
 	}
+
+	bot.DB.Create(poll)
+	return poll
 }
 
-// AddSuggestion adds a suggestion to the poll
-func (p *Poll) AddSuggestion(suggestion Suggestion) {
-	p.Suggestions = append(p.Suggestions, suggestion)
-}
-
-// IsComplete returns true if the poll is complete
-func (p *Poll) IsComplete() bool {
-	return !p.InProgress
-}
-
-// GetCurrentPoll returns the current poll from the database
-func GetCurrentPoll(db gorm.DB) *Poll {
+func GetCurrentPoll(db *gorm.DB) *Poll {
 	var poll Poll
-	db.Where("in_progress = ?", true).First(&poll)
+	db.Preload("Suggestions").Where("in_progress = ? and is_complete = ?", true, false).First(&poll)
+	if poll.ID == 0 {
+		fmt.Println("No current poll found")
+		return nil
+	}
+
 	return &poll
+}
+
+func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
+	var options []discordgo.SelectMenuOption
+	for _, suggestion := range p.Suggestions {
+		options = append(options, discordgo.SelectMenuOption{
+			Label:   suggestion.Content,
+			Value:   suggestion.Content,
+			Default: false,
+			Emoji:   discordgo.ComponentEmoji{Name: "📅"},
+		})
+	}
+
+	return options
 }
