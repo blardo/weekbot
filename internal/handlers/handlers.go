@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"strings"
-
 	"weekbot/internal/commands"
 
 	"github.com/bwmarrin/discordgo"
@@ -12,7 +11,7 @@ import (
 // ParseCommand parses a command from a message
 func ParseInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	command := i.Type
-
+	
 	switch command {
 	case discordgo.InteractionApplicationCommand:
 		switch i.ApplicationCommandData().Name {
@@ -22,7 +21,7 @@ func ParseInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				Data: &discordgo.InteractionResponseData{Content: "Pong!"},
 			})
 		case "poll":
-			commands.HandleWeekPoll(s, i)
+			commands.HandleWeekPoll(s, i )
 		default:
 			fmt.Println("Unknown command:", i.ApplicationCommandData().Name)
 		}

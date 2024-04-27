@@ -38,7 +38,7 @@ func main() {
 	// Start the core Discord listener
 	// Order here is important so we have a UserID for later
 	bot = router.ConfigureBot(bot)
-	bot = router.SetCommands(bot)
+	// bot = router.SetCommands(bot)
 	bot.Start()
 
 	// Setup an interrupt listener
