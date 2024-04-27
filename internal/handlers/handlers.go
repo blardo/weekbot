@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"strings"
+
 	"weekbot/internal/commands"
 
 	"github.com/bwmarrin/discordgo"
@@ -11,7 +12,7 @@ import (
 // ParseCommand parses a command from a message
 func ParseInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	command := i.Type
-	
+
 	switch command {
 	case discordgo.InteractionApplicationCommand:
 		switch i.ApplicationCommandData().Name {
@@ -21,7 +22,9 @@ func ParseInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				Data: &discordgo.InteractionResponseData{Content: "Pong!"},
 			})
 		case "poll":
-			commands.HandleWeekPoll(s, i )
+			commands.HandleWeekPoll(s, i)
+		case "endpoll":
+			commands.HandleEndPoll(s, i)
 		default:
 			fmt.Println("Unknown command:", i.ApplicationCommandData().Name)
 		}
@@ -38,12 +41,12 @@ func ParseChatCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// If the message ends in the word week, add it to the list of suggestions for the poll
 	message := strings.Split(m.Content, " ")
 	acceptableWeeks := []string{"week", "Week", "week.", "Week.", "week!", "Week!", "week?", "Week?"} // move to constants file
-		for _, week := range acceptableWeeks {
-			if message[len(message)-1] == week{
-				commands.HandleWeekSuggestion(s, m)
-				break
-			}
+	for _, week := range acceptableWeeks {
+		if message[len(message)-1] == week {
+			commands.HandleWeekSuggestion(s, m)
+			break
 		}
+	}
 }
 
 func HandleReactions(s *discordgo.Session, r *discordgo.MessageReactionAdd) {

@@ -1,21 +1,27 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
-// Suggestion is a struct that represents a suggestion
 type Suggestion struct {
 	gorm.Model
-	WeekName string
-	Selected bool
-	Updicks  int
-	PollID   uint
+	Content string
+	Used    bool
+	PollID  uint
 }
 
-// NewSuggestion creates a new suggestion
-func NewSuggestion(weekName string) *Suggestion {
-	return &Suggestion{
-		WeekName: weekName,
-		Selected: false,
-		Updicks:  0, 
+func NewSuggestion(db *gorm.DB, content string) *Suggestion {
+	s := &Suggestion{
+		Content: content,
+		Used:    false,
 	}
+	db.Create(s)
+	return s
+}
+
+func GetMostRecentUnusedSuggestions(db *gorm.DB) []Suggestion {
+	var suggestions []Suggestion
+	db.Where("used = ?", false).Find(&suggestions)
+	return suggestions
 }
