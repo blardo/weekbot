@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"weekbot/internal/db"
 	"weekbot/internal/models"
 
 	"github.com/bwmarrin/discordgo"
@@ -21,8 +22,15 @@ func HandleWeekSuggestion(s *discordgo.Session, m *discordgo.MessageCreate) {
 	suggestion := m.Content
 	// Create a new suggestion from the message
 	bot := models.GetBot(m.GuildID)
-	models.NewSuggestion(bot.DB, suggestion)
-
+	models.NewSuggestion(bot.DB, suggestion, bot.GuildID)
+	
 	fmt.Println("Adding suggestion:", suggestion)
 	s.ChannelMessageSend(m.ChannelID, "Week suggestion added: "+m.Content)
+	list, err := db.GetAllSuggestions(m.GuildID)
+	if err != nil {
+		fmt.Println(err)
+	}
+	for _, suggestion := range list{
+		println(suggestion.Content)
+	}
 }

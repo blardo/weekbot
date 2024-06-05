@@ -11,8 +11,9 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	bot := models.GetBot(m.GuildID)
 
 	poll := models.NewOrCurrentPoll(bot)
-
+	
 	if poll == nil {
+		println("poll is nil")
 		s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -21,34 +22,42 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 		})
 		return
 	}
-
-	s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
-		Content: "Poll has started",
-		Components: []discordgo.MessageComponent{
-			&discordgo.ActionsRow{
-				Components: []discordgo.MessageComponent{
-					discordgo.SelectMenu{
-						CustomID:    "first_choice",
-						Placeholder: "Select a week",
-						Options:     poll.GetSelectOptions(),
+	println("poll is not nil")
+	
+	options := poll.GetSelectOptions()
+	for _, option := range options {
+		println("poll options: " + option.Label)
+	}
+	s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "Poll has started",
+			Components: []discordgo.MessageComponent{
+				&discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						discordgo.SelectMenu{
+							CustomID:    "first_choice",
+							Placeholder: "Select a week",
+							Options:     poll.GetSelectOptions(),
+						},
 					},
 				},
-			},
-			&discordgo.ActionsRow{
-				Components: []discordgo.MessageComponent{
-					discordgo.SelectMenu{
-						CustomID:    "second_choice",
-						Placeholder: "Select a week",
-						Options:     poll.GetSelectOptions(),
+				&discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						discordgo.SelectMenu{
+							CustomID:    "second_choice",
+							Placeholder: "Select a week",
+							Options:     poll.GetSelectOptions(),
+						},
 					},
 				},
-			},
-			&discordgo.ActionsRow{
-				Components: []discordgo.MessageComponent{
-					discordgo.SelectMenu{
-						CustomID:    "third_choice",
-						Placeholder: "Select a week",
-						Options:     poll.GetSelectOptions(),
+				&discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						discordgo.SelectMenu{
+							CustomID:    "third_choice",
+							Placeholder: "Select a week",
+							Options:     poll.GetSelectOptions(),
+						},
 					},
 				},
 			},
