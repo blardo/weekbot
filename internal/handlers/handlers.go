@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"weekbot/internal/commands"
+	actions "weekbot/internal/actions"
+	commands "weekbot/internal/commands"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -43,7 +44,7 @@ func ParseChatCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	acceptableWeeks := []string{"week", "Week", "week.", "Week.", "week!", "Week!", "week?", "Week?"} // move to constants file
 	for _, week := range acceptableWeeks {
 		if message[len(message)-1] == week {
-			commands.HandleWeekSuggestion(s, m)
+			actions.HandleWeekSuggestion(s, m)
 			break
 		}
 	}

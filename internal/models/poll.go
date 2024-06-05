@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"gorm.io/gorm"
@@ -54,7 +55,30 @@ func GetCurrentPoll(db *gorm.DB) *Poll {
 
 func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
 	var options []discordgo.SelectMenuOption
+	var filter []Suggestion
 	for _, suggestion := range p.Suggestions {
+        println("suggestion loop")
+        println(suggestion.Content)
+
+        isDuplicate := false
+        for _, f := range filter {
+            println("filter loop")
+            if strings.EqualFold(suggestion.Content, f.Content){
+                isDuplicate = true
+                break
+            }
+        }
+
+        if !isDuplicate {
+            filter = append(filter, suggestion)
+        }
+    }
+	// discords options limit is 25
+	if len(filter) > 25 {
+		filter = filter[:25]
+	} 
+	for _, suggestion := range filter {
+		println("adding to poll " + suggestion.Content)
 		options = append(options, discordgo.SelectMenuOption{
 			Label:   suggestion.Content,
 			Value:   suggestion.Content,

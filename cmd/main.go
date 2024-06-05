@@ -23,7 +23,7 @@ func main() {
 
 	// Configure the handlers
 	discordService = router.ConfigureHandlers(discordService)
-	discordService = router.SetCommands(discordService)
+
 
 	// Connect to Discord using the token from the config
 	fmt.Println("Connecting to Discord...")
@@ -36,11 +36,14 @@ func main() {
 	// Create a new bot instance for each guild
 	for _, guild := range discordService.GetGuilds() {
 		_, err := models.NewBot(config, guild.ID)
+		discordService = router.SetCommands(discordService, guild.ID)
 		if err != nil {
 			fmt.Println("Error creating bot:", err)
 			return
 		}
 	}
+
+	
 
 	// Setup an interrupt listener
 	stop := make(chan os.Signal, 1)

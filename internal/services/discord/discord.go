@@ -2,6 +2,7 @@ package discord
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -57,8 +58,12 @@ func (d *DiscordService) AddHandler(handler interface{}) {
 }
 
 // AddSlashCommand adds a slash command to the Discord session
-func (d *DiscordService) AddSlashCommand(command *discordgo.ApplicationCommand) error {
-	_, err := d.session.ApplicationCommandCreate("905990240441888778", "", command)
+func (d *DiscordService) AddSlashCommand(command *discordgo.ApplicationCommand, guildID string) error {
+	println("slash command " + guildID)
+	println("slash command " + command.ID)
+	println("slash command " + os.Getenv("APP_ID"))
+
+	_, err := d.session.ApplicationCommandCreate(os.Getenv("APP_ID"), guildID, command)
 	return err
 }
 
