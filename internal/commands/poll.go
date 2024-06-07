@@ -2,6 +2,7 @@ package commands
 
 import (
 	"log"
+	"strconv"
 	"weekbot/internal/models"
 
 	"github.com/bwmarrin/discordgo"
@@ -13,6 +14,7 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 
 	poll := models.NewOrCurrentPoll(bot)
 	
+	
 	if poll == nil {
 		println("poll is nil")
 		s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
@@ -20,7 +22,6 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 		})
 		return
 	}
-	println("poll is not nil")
 
 
 	////
@@ -29,10 +30,7 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	//// so we can process the information independantly of the message itself.
 	////
 	
-	options := poll.GetSelectOptions()
-	for _, option := range options {
-		println("poll options: " + option.Label)
-	}
+	
 	s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
@@ -59,6 +57,44 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 
 
 	s.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		bot := models.GetBot(i.GuildID)
+		if bot == nil{
+			println("Bot is nil")
+			return
+		}
+		println("Bot is not nil" + bot.GuildID)
+
+		poll := models.NewOrCurrentPoll(bot)
+		if poll == nil {
+			println("Poll is nil")
+			return
+		}
+		println("Poll is not nil" + strconv.Itoa(int(poll.ID)))
+		if i.Member == nil{
+			println("Member is nil")
+			return
+		}
+		println("User ID: " + i.Member.User.ID)
+		
+		println("IsVoter: " + strconv.FormatBool( poll.IsVoter(i.Member.User.ID)))
+		if poll.IsVoter(i.Member.User.ID) {
+			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "You have already voted",
+					Flags: discordgo.MessageFlagsEphemeral,
+				},
+			})
+			if err != nil {
+				println("Error responding to interaction: %v", err)
+				return
+			}
+		} else {
+			poll.AddVoter(i.Member.User.ID)
+			for _, ID := range poll.VoterIDs {
+				println("Voter ID: " + ID)
+			}
+		}
 	
 		if i.Type == discordgo.InteractionMessageComponent && i.MessageComponentData().CustomID == "poll_button" {
 	
