@@ -15,14 +15,9 @@ func ConfigureHandlers(dsc *discord.DiscordService) *discord.DiscordService {
 
 func SetCommands(dsc *discord.DiscordService, guildId string) *discord.DiscordService {
 
-
-		println(guildId)
 		dsc.AddSlashCommand(commands.GetPingCommand(), guildId)
-		println("Adding ping command")
 		dsc.AddSlashCommand(commands.GetPollCommand(), guildId)
-		println("Adding poll command")
 		dsc.AddSlashCommand(commands.EndPollCommand(), guildId)
-		println("Adding endpoll command")
 		
 	return dsc
 }
