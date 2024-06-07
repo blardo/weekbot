@@ -37,7 +37,7 @@ func NewDiscordService(token string) (*DiscordService, error) {
 
 func GetDiscordService() (*DiscordService, error) {
 	if discordConnection == nil {
-		return nil, fmt.Errorf("Discord service not initialized")
+		return nil, fmt.Errorf("discord service not initialized")
 	}
 	return discordConnection, nil
 }
@@ -59,10 +59,6 @@ func (d *DiscordService) AddHandler(handler interface{}) {
 
 // AddSlashCommand adds a slash command to the Discord session
 func (d *DiscordService) AddSlashCommand(command *discordgo.ApplicationCommand, guildID string) error {
-	println("slash command " + guildID)
-	println("slash command " + command.ID)
-	println("slash command " + os.Getenv("APP_ID"))
-
 	_, err := d.session.ApplicationCommandCreate(os.Getenv("APP_ID"), guildID, command)
 	return err
 }
