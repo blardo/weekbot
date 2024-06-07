@@ -14,6 +14,7 @@ type Poll struct {
 	Suggestions []Suggestion
 	InProgress  bool
 	IsComplete  bool
+	VoterIDs    []string `gorm:"type:text[]"`
 }
 
 func NewOrCurrentPoll(bot *Bot) *Poll {
@@ -33,9 +34,15 @@ func NewOrCurrentPoll(bot *Bot) *Poll {
 		bot.DB.Save(&suggestions[i])
 	}
 
+	voterIDs := getVoterIDs(poll)
+	if voterIDs == nil {
+		voterIDs = []string{}
+	}
+
 	poll = &Poll{
 		Suggestions: suggestions,
 		InProgress:  true,
+		VoterIDs:   voterIDs,
 	}
 
 	bot.DB.Create(poll)
@@ -57,12 +64,10 @@ func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
 	var options []discordgo.SelectMenuOption
 	var filter []Suggestion
 	for _, suggestion := range p.Suggestions {
-        println("suggestion loop")
-        println(suggestion.Content)
+
 
         isDuplicate := false
         for _, f := range filter {
-            println("filter loop")
             if strings.EqualFold(suggestion.Content, f.Content){
                 isDuplicate = true
                 break
@@ -78,7 +83,6 @@ func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
 		filter = filter[:25]
 	} 
 	for _, suggestion := range filter {
-		println("adding to poll " + suggestion.Content)
 		options = append(options, discordgo.SelectMenuOption{
 			Label:   suggestion.Content,
 			Value:   suggestion.Content,
@@ -89,3 +93,21 @@ func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
 
 	return options
 }
+
+func (p *Poll) AddVoter(voterID string) {
+	p.VoterIDs = append(p.VoterIDs, voterID)
+}
+
+func (p *Poll) IsVoter(voterID string) bool {
+	for _, id := range p.VoterIDs {
+		if id == voterID {
+			return true
+		}
+	}
+	return false
+}
+
+func getVoterIDs(poll *Poll) []string {
+	return poll.VoterIDs
+}
+
