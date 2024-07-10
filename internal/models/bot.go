@@ -48,4 +48,6 @@ func GetBotInstances() map[string]*Bot {
 func configureSchema(db *gorm.DB) {
 	db.AutoMigrate(&Suggestion{})
 	db.AutoMigrate(&Poll{})
+	db.AutoMigrate(&Voter{})
+	db.AutoMigrate(&Ballot{})
 }
