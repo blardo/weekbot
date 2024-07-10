@@ -36,7 +36,7 @@ func NewOrCurrentPoll(bot *Bot) *Poll {
         Suggestions: suggestions,
         InProgress:  true,
     }
-
+    println("Creating new poll")
     bot.DB.Create(poll)
     return poll
 }
@@ -46,7 +46,7 @@ func GetCurrentPoll(db *gorm.DB) *Poll {
     var poll Poll
     db.Preload("Suggestions").Where("in_progress = ? and is_complete = ?", true, false).First(&poll)
     if poll.ID == 0 {
-        fmt.Println("No current poll found")
+        fmt.Println("No current poll found") 
         return nil
     }
 
@@ -87,9 +87,10 @@ func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
 }
 
 // IsVoter checks if a user is a voter
-func (p *Poll) HasBallot(voterID string) bool {
-    for _, voter := range p.Ballots {
-        if voter.VoterId == voterID {
+func (p *Poll) HasBallot(db *gorm.DB ,voterID string) bool {
+    ballots := GetAllBallots(db)
+    for _, voter := range ballots {
+        if voter.VoterId == voterID && voter.PollID == p.ID{
             return true
         }
     }
@@ -128,12 +129,16 @@ func (p *Poll) AddBallotForVoter(bot *Bot, userID string, ballot Ballot) {
             UserID: userID,
         }
         bot.DB.Create(&voter)
+        bot.DB.Save(&p)
+        println("Voter created")
+
     }
 
     // Add the voter's ID to the ballot and save it
     ballot.VoterId = userID
     bot.DB.Create(&ballot)
-
+    println(ballot.FirstChoice + " " + ballot.SecondChoice + " " + ballot.ThirdChoice)
     // Add the ballot to the poll
+    println("Adding ballot to poll")
     p.AddBallot(ballot)
 }

@@ -66,7 +66,11 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 				println("Bot is nil")
 				return
 			}
-			
+			ballots := models.GetAllBallots(bot.DB)
+
+			for _, ballot := range ballots {
+				println("Ballot: " + ballot.VoterId)
+			}
 	
 			poll := models.NewOrCurrentPoll(bot)
 			if poll == nil {
@@ -80,9 +84,13 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 				return
 			}
 			
+			pollBallots := poll.GetBallots()
+			for _, ballot := range pollBallots {
+				println("Poll Ballot: " + ballot.VoterId)
+			}
 			
 		
-			if poll.HasBallot(i.Member.User.ID) {
+			if poll.HasBallot(bot.DB, i.Member.User.ID) {
 	
 				println("isVoter poll pull ")
 				println(len(poll.Ballots))
@@ -98,13 +106,18 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 					return
 				}
 			} else {
+				log.Println(i.Member.User.ID)
 				ballot := models.Ballot{
 					VoterId: i.Member.User.ID,
 					PollID: poll.ID,
 					Date: time.Now(),
 				}
+				println("Ballot created")
 				poll.AddBallotForVoter(bot, i.Member.User.ID, ballot)
-				
+				pollBallots := poll.GetBallots()
+				for _, ballot := range pollBallots {
+					println("Poll Ballot: " + ballot.VoterId)
+				}
 			}
 	
 			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -177,6 +190,9 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 				log.Printf("Error responding to interaction: %v", err)
 				return
 			}
+
+			ballot := models.GetBallotByVoterID(bot.DB, i.Member.User.ID)
+			ballot.FirstChoice = i.MessageComponentData().Values[0]
 			println("First choice: " + i.MessageComponentData().Values[0])
 		}
 		} else if i.Type == discordgo.InteractionMessageComponent && i.MessageComponentData().CustomID == "second_choice" { {
@@ -210,27 +226,6 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 		if i.Type == discordgo.InteractionApplicationCommand {
 			// This is a slash command interaction
 		} else if i.Type == discordgo.InteractionMessageComponent && i.MessageComponentData().CustomID == "submit_button" {
-			// This is a button interaction
-			ballot := models.Ballot  {
-				FirstChoice:  i.MessageComponentData().Values[0],
-				SecondChoice: i.MessageComponentData().Values[1],
-				ThirdChoice:  i.MessageComponentData().Values[2],
-				Date: time.Now(),
-			}
-			bot := models.GetBot(i.GuildID)
-			if bot == nil{
-				println("Bot is nil")
-				return
-			}
-			poll := models.NewOrCurrentPoll(bot)
-			if poll == nil {
-				println("Poll is nil")
-				return
-			}
-			poll.AddBallotForVoter(bot, i.Member.User.ID, ballot)
-
-
-
 
 			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,

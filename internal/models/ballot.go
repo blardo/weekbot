@@ -67,9 +67,9 @@ func (b *Ballot) SetDate(date time.Time) {
 }
 
 // GetBallotByID gets a ballot by its ID
-func GetBallotByID(db *gorm.DB, id uint) *Ballot {
+func GetBallotByVoterID(db *gorm.DB, voterID string) *Ballot {
     var ballot Ballot
-    db.First(&ballot, id)
+    db.Where("voter_id = ?", voterID).First(&ballot)
     return &ballot
 }
 
