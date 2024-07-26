@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -10,135 +11,204 @@ import (
 
 // Poll is a struct that represents a poll
 type Poll struct {
-    gorm.Model
-    ID          uint `sql:"AUTO_INCREMENT" gorm:"primary_key"`
-    Suggestions []Suggestion
-    InProgress  bool
-    IsComplete  bool
-    Ballots     []Ballot `gorm:"foreignKey:PollID"`
-    
+	gorm.Model
+	ID          uint `sql:"AUTO_INCREMENT" gorm:"primary_key"`
+	Suggestions []Suggestion
+	InProgress  bool
+	IsComplete  bool
+	Ballots     []Ballot `gorm:"foreignKey:PollID"`
 }
+
 // NewOrCurrentPoll creates a new poll or returns the current one
 func NewOrCurrentPoll(bot *Bot) *Poll {
-    poll := GetCurrentPoll(bot.DB)
-    if poll != nil {
-        println("Current poll found")
-        return poll
-    }
+	poll := GetCurrentPoll(bot.DB)
+	if poll != nil {
+		println("Current poll found")
+		return poll
+	}
 
-    suggestions := GetMostRecentUnusedSuggestions(bot.DB)
-    if len(suggestions) == 0 {
-        fmt.Println("No suggestions found")
-        return nil
-    }
+	suggestions := GetMostRecentUnusedSuggestions(bot.DB)
+	if len(suggestions) == 0 {
+		fmt.Println("No suggestions found")
+		return nil
+	}
 
-    poll = &Poll{
-        Suggestions: suggestions,
-        InProgress:  true,
-    }
-    println("Creating new poll")
-    bot.DB.Create(poll)
-    return poll
+	poll = &Poll{
+		Suggestions: suggestions,
+		InProgress:  true,
+	}
+	println("Creating new poll")
+	bot.DB.Create(poll)
+	return poll
 }
 
 // GetCurrentPoll gets the current poll from the database
 func GetCurrentPoll(db *gorm.DB) *Poll {
-    var poll Poll
-    db.Preload("Suggestions").Where("in_progress = ? and is_complete = ?", true, false).First(&poll)
-    if poll.ID == 0 {
-        fmt.Println("No current poll found") 
-        return nil
-    }
+	var poll Poll
+	db.Preload("Suggestions").Preload("Ballots").Where("in_progress = ? and is_complete = ?", true, false).First(&poll)
+	if poll.ID == 0 {
+		fmt.Println("No current poll found")
+		return nil
+	}
 
-    return &poll
+	return &poll
 }
 
 // GetSelectOptions gets the select options for the poll
 func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
-    var options []discordgo.SelectMenuOption
-    var filter []Suggestion
-    for _, suggestion := range p.Suggestions {
-        isDuplicate := false
-        for _, f := range filter {
-            if strings.EqualFold(suggestion.Content, f.Content){
-                isDuplicate = true
-                break
-            }
-        }
+	var options []discordgo.SelectMenuOption
+	var filter []Suggestion
+	for _, suggestion := range p.Suggestions {
+		isDuplicate := false
+		for _, f := range filter {
+			if strings.EqualFold(suggestion.Content, f.Content) {
+				isDuplicate = true
+				break
+			}
+		}
 
-        if !isDuplicate {
-            filter = append(filter, suggestion)
-        }
-    }
-    // discords options limit is 25
-    if len(filter) > 25 {
-        filter = filter[:25]
-    } 
-    for _, suggestion := range filter {
-        options = append(options, discordgo.SelectMenuOption{
-            Label:   suggestion.Content,
-            Value:   suggestion.Content,
-            Default: false,
-            Emoji:   discordgo.ComponentEmoji{Name: "📅"},
-        })
-    }
+		if !isDuplicate {
+			filter = append(filter, suggestion)
+		}
+	}
+	// discords options limit is 25
+	if len(filter) > 25 {
+		filter = filter[:25]
+	}
+	for _, suggestion := range filter {
+		options = append(options, discordgo.SelectMenuOption{
+			Label:   suggestion.Content,
+			Value:   suggestion.Content,
+			Default: false,
+			Emoji:   discordgo.ComponentEmoji{Name: "📅"},
+		})
+	}
 
-    return options
+	return options
 }
 
 // IsVoter checks if a user is a voter
-func (p *Poll) HasBallot(db *gorm.DB ,voterID string) bool {
-    ballots := GetAllBallots(db)
-    for _, voter := range ballots {
-        if voter.VoterId == voterID && voter.PollID == p.ID{
-            return true
-        }
-    }
-    return false
+func (p *Poll) HasBallot(db *gorm.DB, voterID string) bool {
+	ballots := p.GetBallots()
+	for _, ballot := range ballots {
+		println("Ballot VoterID "+ballot.VoterId, ballot.FirstChoice, ballot.SecondChoice, ballot.ThirdChoice, strconv.FormatBool(ballot.Cast))
+		if ballot.VoterId == voterID && ballot.PollID == p.ID {
+			println("Ballot Cast " + strconv.FormatBool(ballot.Cast))
+
+			if ballot.Cast {
+				println("has ballot return true")
+				return true
+			}
+		}
+	}
+	println("has ballot return false")
+	return false
 }
-
-
 
 // GetBallots gets the ballots of the poll
 func (p *Poll) GetBallots() []Ballot {
-    return p.Ballots
+	return p.Ballots
 }
 
 // AddBallot adds a ballot to the poll
-func (p *Poll) AddBallot(ballot Ballot) {
-    p.Ballots = append(p.Ballots, ballot)
+func (p *Poll) AddBallotToPoll(bot *Bot, ballot Ballot) {
+	for index, b := range p.Ballots {
+		if b.VoterId == ballot.VoterId {
+			p.Ballots[index] = ballot
+			break
+		}
+	}
+	p.Ballots = append(p.Ballots, ballot)
+	bot.DB.Save(&p)
+
+}
+
+func (p *Poll) AddBallotForVoter(bot *Bot, ballot Ballot) {
+	var voter Voter
+	bot.DB.Where("user_id = ?", ballot.VoterId).First(&voter)
+
+	if voter.UserID == "" {
+		// Voter does not exist, create new voter
+		voter = Voter{
+			UserID: ballot.VoterId,
+		}
+		bot.DB.Create(&voter)
+		println("ABFV -- Voter created")
+
+	}
+	bot.DB.Create(&ballot)
+
+	// Add the ballot to the poll
+	println("ABFV -- Adding ballot to poll")
+	p.AddBallotToPoll(bot, ballot)
+
+}
+
+func (p *Poll) PerformRankedChoiceVoting() string {
+	voteCounts := make(map[string]int)
+	totalBallots := len(p.Ballots)
+
+	// Initialize vote counts for each suggestion
+	for _, suggestion := range p.Suggestions {
+		voteCounts[suggestion.Content] = 0
+	}
+
+	// First round: count first-choice votes
+	for _, ballot := range p.Ballots {
+		voteCounts[ballot.FirstChoice]++
+	}
+
+	// Check for majority
+	for {
+		// Find the suggestion with the highest votes
+		var maxVotes int
+		var maxSuggestion string
+		for suggestion, count := range voteCounts {
+			if count > maxVotes {
+				maxVotes = count
+				maxSuggestion = suggestion
+				println("IF COUNT > MAX VOTES", "maxVotes: "+strconv.Itoa(maxVotes)+" maxSuggestion: "+maxSuggestion)
+			}
+		}
+
+		// Check if the suggestion has more than 50% of the votes
+		if maxVotes > totalBallots/2 {
+			println("IF MAX VOTES", maxVotes, totalBallots, maxSuggestion)
+			return maxSuggestion
+		}
+
+		// Find the suggestion with the fewest votes
+		var minVotes int = totalBallots + 1
+		var minSuggestion string
+		for suggestion, count := range voteCounts {
+			if count > 0 && count < minVotes {
+				minVotes = count
+				minSuggestion = suggestion
+			}
+		}
+
+		// Eliminate the suggestion with the fewest votes
+		delete(voteCounts, minSuggestion)
+
+		// Redistribute votes
+		for _, ballot := range p.Ballots {
+			if ballot.FirstChoice == minSuggestion {
+				if voteCounts[ballot.SecondChoice] > 0 {
+					voteCounts[ballot.SecondChoice]++
+				} else if voteCounts[ballot.ThirdChoice] > 0 {
+					voteCounts[ballot.ThirdChoice]++
+				}
+			}
+		}
+	}
 }
 
 // EndPoll ends the poll
 func (p *Poll) EndPoll() {
-    p.InProgress = false
-    p.IsComplete = true
+	p.InProgress = false
+	p.IsComplete = true
 
-    for _, suggestion := range p.Suggestions {
-        suggestion.Used = true
-    }
-}
-
-func (p *Poll) AddBallotForVoter(bot *Bot, userID string, ballot Ballot) {
-    var voter Voter
-    bot.DB.Where("user_id = ?", userID).First(&voter)
-
-    if voter.UserID == "" {
-        // Voter does not exist, create new voter
-        voter = Voter{
-            UserID: userID,
-        }
-        bot.DB.Create(&voter)
-        bot.DB.Save(&p)
-        println("Voter created")
-
-    }
-
-    // Add the voter's ID to the ballot and save it
-    ballot.VoterId = userID
-    bot.DB.Create(&ballot)
-    println(ballot.FirstChoice + " " + ballot.SecondChoice + " " + ballot.ThirdChoice)
-    // Add the ballot to the poll
-    println("Adding ballot to poll")
-    p.AddBallot(ballot)
+	for _, suggestion := range p.Suggestions {
+		suggestion.Used = true
+	}
 }
