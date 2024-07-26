@@ -14,6 +14,7 @@ type Ballot struct {
     SecondChoice string
     ThirdChoice  string
     Date         time.Time
+    Cast        bool
 }
 
 // GetSubmitterID returns the SubmitterID of the ballot
@@ -64,6 +65,10 @@ func (b *Ballot) GetDate() time.Time {
 // SetDate sets the Date of the ballot
 func (b *Ballot) SetDate(date time.Time) {
     b.Date = date
+}
+
+func (b *Ballot) SetCast(cast bool) {
+    b.Cast = cast
 }
 
 // GetBallotByID gets a ballot by its ID
