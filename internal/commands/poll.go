@@ -17,8 +17,11 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 
 	if poll == nil {
 		println("poll is nil")
-		s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
-			Content: "No suggestions found",
+		s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "Not Enough Suggestions to Start Poll",
+			},
 		})
 		return
 	}
@@ -28,7 +31,7 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	// // Get all ballots
 	// ballots := models.GetAllBallots(bot.DB)
 
-	// // delete all ballots
+	// // // delete all ballots
 	// for _, ballot := range ballots {
 	// 	bot.DB.Delete(&ballot)
 	// 	println("Ballot: " + ballot.VoterId + " Deleted")
@@ -36,7 +39,7 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 
 	// end poll
 
-	// poll.EndPoll()
+	//poll.EndPoll()
 	// Delete all balllots
 	//
 
@@ -98,7 +101,8 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 			for _, ballot := range pollBallots {
 				println("Poll Button -- Initial Check Poll Ballot: " + ballot.VoterId)
 			}
-			if poll.HasBallot(bot.DB, i.Member.User.ID) {
+
+			if poll.BallotCast(i.Member.User.ID) {
 				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
@@ -110,6 +114,8 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 					println("Error responding to interaction: %v", err)
 					return
 				}
+			} else if poll.HasBallot(i.Member.User.ID) {
+				println("Has Ballot -- Ballot exists")
 			} else {
 				ballot := models.Ballot{
 					VoterId: i.Member.User.ID,

@@ -23,16 +23,16 @@ func NewSuggestion(db *gorm.DB, content string, guildID string) *Suggestion {
 	result := db.Create(s)
 	if result.Error != nil {
 		panic(result.Error)
-		
+
 	} else {
 		println("Suggestion created ", result.RowsAffected)
-	
+
 	}
 	return s
 }
 
 func GetMostRecentUnusedSuggestions(db *gorm.DB) []Suggestion {
 	var suggestions []Suggestion
-	db.Where("used = ?", false).Find(&suggestions)
+	db.Where("used = ? AND updicks >= ?", false, 3).Find(&suggestions)
 	return suggestions
 }
