@@ -36,7 +36,7 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 
 	// end poll
 
-	poll.EndPoll()
+	// poll.EndPoll()
 	// Delete all balllots
 	//
 
@@ -278,18 +278,17 @@ func HandleEndPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 		return
 	}
 
-	// if len(poll.Ballots) < 5 {
-	// 	s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
-	// 		Type: discordgo.InteractionResponseChannelMessageWithSource,
-	// 		Data: &discordgo.InteractionResponseData{
-	// 			Content: "You do not have enough votes to end the poll",
-	// 		},
-	// 	})
-	// 	return
-	// }
+	if len(poll.Ballots) < 5 {
+		s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "You do not have enough votes to end the poll",
+			},
+		})
+		return
+	}
 
 	// change server name
-	println("Poll ended name is: " + poll.PerformRankedChoiceVoting())
 
 	newName := poll.PerformRankedChoiceVoting()
 
