@@ -89,21 +89,29 @@ func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
 }
 
 // IsVoter checks if a user is a voter
-func (p *Poll) HasBallot(db *gorm.DB, voterID string) bool {
+func (p *Poll) HasBallot(voterID string) bool {
 	ballots := p.GetBallots()
 	for _, ballot := range ballots {
 		println("Ballot VoterID "+ballot.VoterId, ballot.FirstChoice, ballot.SecondChoice, ballot.ThirdChoice, strconv.FormatBool(ballot.Cast))
 		if ballot.VoterId == voterID && ballot.PollID == p.ID {
-			println("Ballot Cast " + strconv.FormatBool(ballot.Cast))
-
-			if ballot.Cast {
-				println("has ballot return true")
-				return true
-			}
+			return true
 		}
 	}
 	println("has ballot return false")
 	return false
+}
+
+func (p *Poll) BallotCast(voterID string) bool {
+	var ballot Ballot
+	ballots := p.GetBallots()
+	for _, b := range ballots {
+		if b.VoterId == voterID {
+			ballot = b
+			break
+		}
+	}
+	return ballot.Cast
+
 }
 
 // GetBallots gets the ballots of the poll
@@ -237,6 +245,7 @@ func (p *Poll) PerformRankedChoiceVoting() string {
 
 // EndPoll ends the poll
 func (p *Poll) EndPoll() {
+	println("Ending poll")
 	p.InProgress = false
 	p.IsComplete = true
 
