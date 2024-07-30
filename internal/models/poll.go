@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 
@@ -67,7 +68,7 @@ func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
 			}
 		}
 
-		if !isDuplicate {
+		if !isDuplicate && suggestion.Updicks >= 3 {
 			filter = append(filter, suggestion)
 		}
 	}
@@ -156,6 +157,39 @@ func (p *Poll) PerformRankedChoiceVoting() string {
 	// First round: count first-choice votes
 	for _, ballot := range p.Ballots {
 		voteCounts[ballot.FirstChoice]++
+		println("FC", ballot.FirstChoice, voteCounts[ballot.FirstChoice])
+	}
+
+	// Remove suggestions that did not receive any votes in the first round
+	for suggestion, count := range voteCounts {
+		println("SUGGESTION COUNT", suggestion, count)
+	}
+	for suggestion, count := range voteCounts {
+		if count == 0 {
+			println("deleted: " + suggestion)
+			delete(voteCounts, suggestion)
+		}
+	}
+
+	if totalBallots < 4 {
+		allOneVote := true
+		for _, count := range voteCounts {
+			if count != 1 {
+				allOneVote = false
+				break
+			}
+		}
+		if allOneVote {
+			// Collect all suggestions with one vote
+			var oneVoteSuggestions []string
+			for suggestion, count := range voteCounts {
+				if count == 1 {
+					oneVoteSuggestions = append(oneVoteSuggestions, suggestion)
+				}
+			}
+			// Randomly select a winner from the suggestions with one vote
+			return oneVoteSuggestions[rand.Intn(len(oneVoteSuggestions))]
+		}
 	}
 
 	// Check for majority
@@ -167,13 +201,11 @@ func (p *Poll) PerformRankedChoiceVoting() string {
 			if count > maxVotes {
 				maxVotes = count
 				maxSuggestion = suggestion
-				println("IF COUNT > MAX VOTES", "maxVotes: "+strconv.Itoa(maxVotes)+" maxSuggestion: "+maxSuggestion)
 			}
 		}
 
 		// Check if the suggestion has more than 50% of the votes
-		if maxVotes > totalBallots/2 {
-			println("IF MAX VOTES", maxVotes, totalBallots, maxSuggestion)
+		if maxVotes > (totalBallots+1)/2 {
 			return maxSuggestion
 		}
 
