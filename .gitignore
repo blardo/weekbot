@@ -19,3 +19,8 @@
 
 # Go workspace file
 go.work
+
+# Local dev files
+.env
+*.db
+.vscode/
