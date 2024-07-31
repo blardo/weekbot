@@ -55,14 +55,20 @@ func HandleReactions(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	if r.UserID == s.State.User.ID {
 		return
 	}
-	reactions, err := s.MessageReactions(r.ChannelID, r.MessageID, r.Emoji.Name, 5, "", "")
+	emoji := r.Emoji.Name
+	if r.Emoji.ID != "" {
+		emoji = fmt.Sprintf(":%s:%s", r.Emoji.Name, r.Emoji.ID)
+	}
+
+	message, err := s.MessageReactions(r.ChannelID, r.MessageID, emoji, 100, "", "")
+
 	if err != nil {
 		fmt.Println("Error getting reactions:", err)
 		return
 	}
 
 	println(r.Emoji.Name)
-	if r.Emoji.Name == "bd" && len(reactions) >= 3 { // bd 👍
+	if r.Emoji.Name == "bd" && len(message) >= 3 { // bd 👍
 
 		s.MessageReactionAdd(r.ChannelID, r.MessageID, "👍")
 	}

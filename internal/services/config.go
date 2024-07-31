@@ -14,7 +14,7 @@ type Config struct {
 func GetConfig() *Config {
 	godotenv.Load()
 	config := Config{
-		
+
 		DiscordToken: os.Getenv("DISCORD_TOKEN"),
 	}
 	return &config
