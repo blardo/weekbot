@@ -24,7 +24,6 @@ func main() {
 	// Configure the handlers
 	discordService = router.ConfigureHandlers(discordService)
 
-
 	// Connect to Discord using the token from the config
 	fmt.Println("Connecting to Discord...")
 	err = discordService.Connect()
@@ -42,8 +41,6 @@ func main() {
 			return
 		}
 	}
-
-	
 
 	// Setup an interrupt listener
 	stop := make(chan os.Signal, 1)
