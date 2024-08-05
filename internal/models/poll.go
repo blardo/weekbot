@@ -29,6 +29,7 @@ func NewOrCurrentPoll(bot *Bot) *Poll {
 	}
 
 	suggestions := GetMostRecentUnusedSuggestions(bot.DB)
+	println("Suggestions found", len(suggestions))
 	if len(suggestions) < 3 {
 		fmt.Println("Not enough suggestions to start poll")
 		return nil
