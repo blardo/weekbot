@@ -26,24 +26,19 @@ func NewSuggestion(db *gorm.DB, content string, guildID string) *Suggestion {
 	result := db.Create(s)
 	if result.Error != nil {
 		panic(result.Error)
-
 	} else {
 		println("Suggestion created ", result.RowsAffected)
-
 	}
+
+	// Debug print to verify the saved record
+	var savedSuggestion Suggestion
+	db.First(&savedSuggestion, "content = ? AND guild_id = ?", content, guildID)
+	println("Saved Suggestion: ", savedSuggestion.Content, savedSuggestion.GuildID, savedSuggestion.Updicks)
+
 	return s
 }
 
 func UpdateSuggestion(db *gorm.DB, content string, guildID string, updicks int) error {
-	var suggestions []Suggestion
-	results := db.Where("guild_id = ?", guildID).Find(&suggestions, "Updicks >= 0")
-	if results.Error != nil {
-		return results.Error
-	}
-	for _, x := range suggestions {
-		println(x.Content)
-	}
-
 	var suggestion Suggestion
 	result := db.First(&suggestion, "content = ? AND guild_id = ?", content, guildID)
 	if result.Error != nil {
