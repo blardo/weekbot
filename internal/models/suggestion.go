@@ -1,9 +1,6 @@
 package models
 
 import (
-	"errors"
-	"fmt"
-
 	"gorm.io/gorm"
 )
 
@@ -38,24 +35,27 @@ func NewSuggestion(db *gorm.DB, content string, guildID string) *Suggestion {
 	return s
 }
 
-func UpdateSuggestion(db *gorm.DB, content string, guildID string, updicks int) error {
+func UpdateSuggestion(db *gorm.DB, content string, guildID string, updicks int) {
 	var suggestion Suggestion
 	result := db.First(&suggestion, "content = ? AND guild_id = ?", content, guildID)
 	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return fmt.Errorf("suggestion not found")
+		if result.Error == gorm.ErrRecordNotFound {
+			// Suggestion not found, create a new one
+			suggestion = *NewSuggestion(db, content, guildID)
+		} else {
+			// Some other error occurred
+			println("Error updating suggestion: ", result.Error)
 		}
-		return result.Error
 	}
 
 	suggestion.Updicks = updicks
 	result = db.Save(&suggestion)
 	if result.Error != nil {
-		return result.Error
+		println("Error updating suggestion: ", result.Error)
 	}
 
 	println("Suggestion updated ", result.RowsAffected)
-	return nil
+
 }
 
 func GetMostRecentUnusedSuggestions(db *gorm.DB) []Suggestion {
