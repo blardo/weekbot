@@ -6,6 +6,7 @@ import (
 
 	actions "weekbot/internal/actions"
 	commands "weekbot/internal/commands"
+	"weekbot/internal/models"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -55,12 +56,17 @@ func HandleReactions(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	if r.UserID == s.State.User.ID {
 		return
 	}
+	bot := models.GetBot(r.GuildID)
 	emoji := r.Emoji.Name
 	if r.Emoji.ID != "" {
 		emoji = fmt.Sprintf(":%s:%s", r.Emoji.Name, r.Emoji.ID)
 	}
-
-	message, err := s.MessageReactions(r.ChannelID, r.MessageID, emoji, 100, "", "")
+	m, err := s.ChannelMessage(r.ChannelID, r.MessageID)
+	if err != nil {
+		fmt.Println("Error retrieving message:", err)
+		return
+	}
+	reaction, err := s.MessageReactions(r.ChannelID, r.MessageID, emoji, 100, "", "")
 
 	if err != nil {
 		fmt.Println("Error getting reactions:", err)
@@ -68,8 +74,9 @@ func HandleReactions(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	}
 
 	println(r.Emoji.Name)
-	if r.Emoji.Name == "bd" && len(message) >= 3 { // bd 👍
+	if r.Emoji.Name == "bd" && len(reaction) >= 3 { // bd 👍
 
+		models.UpdateSuggestion(bot.DB, m.Content, m.GuildID, len(reaction))
 		s.MessageReactionAdd(r.ChannelID, r.MessageID, "👍")
 	}
 }
