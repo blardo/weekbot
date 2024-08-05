@@ -76,7 +76,7 @@ func HandleReactions(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	println(r.Emoji.Name)
 	if r.Emoji.Name == "bd" && len(reaction) >= 3 { // bd 👍
 
-		models.UpdateSuggestion(bot.DB, m.Content, m.GuildID, len(reaction))
+		models.UpdateSuggestion(bot.DB, m.Content, r.GuildID, len(reaction))
 		s.MessageReactionAdd(r.ChannelID, r.MessageID, "👍")
 	}
 }
