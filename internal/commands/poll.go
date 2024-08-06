@@ -48,7 +48,7 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "Poll has started",
+			Content: "Poll has started @Everyone",
 			Components: []discordgo.MessageComponent{
 				&discordgo.ActionsRow{
 					Components: []discordgo.MessageComponent{
