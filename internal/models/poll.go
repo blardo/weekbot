@@ -157,7 +157,7 @@ func (p *Poll) AddBallotForVoter(bot *Bot, ballot Ballot) {
 func (p *Poll) PerformRankedChoiceVoting() string {
 	voteCounts := make(map[string]int)
 	totalBallots := len(p.Ballots)
-
+	totalEligibleBallots := 0
 	// Initialize vote counts for each suggestion
 	for _, suggestion := range p.Suggestions {
 		voteCounts[suggestion.Content] = 0
@@ -165,6 +165,10 @@ func (p *Poll) PerformRankedChoiceVoting() string {
 
 	// First round: count first-choice votes
 	for _, ballot := range p.Ballots {
+		if !ballot.Cast {
+			continue
+		}
+		totalEligibleBallots++
 		voteCounts[ballot.FirstChoice]++
 		println("FC", ballot.FirstChoice, voteCounts[ballot.FirstChoice])
 	}
@@ -180,7 +184,7 @@ func (p *Poll) PerformRankedChoiceVoting() string {
 		}
 	}
 
-	if totalBallots < 4 {
+	if totalEligibleBallots < 4 {
 		allOneVote := true
 		for _, count := range voteCounts {
 			if count != 1 {
