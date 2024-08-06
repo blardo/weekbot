@@ -48,7 +48,7 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "Poll has started <@everyone>",
+			Content: "Poll has started @everyone",
 			Components: []discordgo.MessageComponent{
 				&discordgo.ActionsRow{
 					Components: []discordgo.MessageComponent{
@@ -288,6 +288,7 @@ func HandleEndPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	bot := models.GetBot(m.GuildID)
 
 	poll := models.GetCurrentPoll(bot.DB)
+	ellibleBallots := 0
 
 	if poll == nil {
 		s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
@@ -298,8 +299,12 @@ func HandleEndPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 		})
 		return
 	}
-
-	if len(poll.Ballots) < 5 {
+	for _, ballot := range poll.Ballots {
+		if ballot.Cast {
+			ellibleBallots++
+		}
+	}
+	if ellibleBallots < 5 {
 		s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
