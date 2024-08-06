@@ -48,7 +48,7 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "Poll has started",
+			Content: "Poll has started @Everyone",
 			Components: []discordgo.MessageComponent{
 				&discordgo.ActionsRow{
 					Components: []discordgo.MessageComponent{
@@ -248,21 +248,36 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 			// This is a slash command interaction
 		} else if i.Type == discordgo.InteractionMessageComponent && i.MessageComponentData().CustomID == "submit_button" {
 			ballot := models.GetBallotByVoterID(bot.DB, i.Member.User.ID)
-			ballot.Cast = true
-			println("ballot cast: " + strconv.FormatBool(ballot.Cast))
-			bot.DB.Save(&ballot)
-			println("Ballot: " + ballot.VoterId + " " + ballot.FirstChoice + " " + ballot.SecondChoice + " " + ballot.ThirdChoice)
+			if ballot.FirstChoice == "" || ballot.SecondChoice == "" || ballot.ThirdChoice == "" {
+				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "Please select all options",
+						Flags:   discordgo.MessageFlagsEphemeral,
+					},
+				})
+				if err != nil {
+					log.Printf("Error responding to interaction: %v", err)
+					return
+				}
+			} else {
 
-			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "Your vote has been submitted",
-					Flags:   discordgo.MessageFlagsEphemeral,
-				},
-			})
-			if err != nil {
-				log.Printf("Error responding to interaction: %v", err)
-				return
+				ballot.Cast = true
+				println("ballot cast: " + strconv.FormatBool(ballot.Cast))
+				bot.DB.Save(&ballot)
+				println("Ballot: " + ballot.VoterId + " " + ballot.FirstChoice + " " + ballot.SecondChoice + " " + ballot.ThirdChoice)
+
+				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "Your vote has been submitted",
+						Flags:   discordgo.MessageFlagsEphemeral,
+					},
+				})
+				if err != nil {
+					log.Printf("Error responding to interaction: %v", err)
+					return
+				}
 			}
 
 		}
