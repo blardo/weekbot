@@ -14,11 +14,11 @@ func TestPerformRankedChoiceVotingFirstChoiceMajority(t *testing.T) {
 			{Content: "Option C"},
 		},
 		Ballots: []models.Ballot{
-			{FirstChoice: "Option A", SecondChoice: "Option B", ThirdChoice: "Option C"},
-			{FirstChoice: "Option A", SecondChoice: "Option C", ThirdChoice: "Option A"},
-			{FirstChoice: "Option C", SecondChoice: "Option A", ThirdChoice: "Option B"},
-			{FirstChoice: "Option A", SecondChoice: "Option B", ThirdChoice: "Option C"},
-			{FirstChoice: "Option B", SecondChoice: "Option A", ThirdChoice: "Option C"},
+			{Cast: true, FirstChoice: "Option A", SecondChoice: "Option B", ThirdChoice: "Option C"},
+			{Cast: true, FirstChoice: "Option A", SecondChoice: "Option C", ThirdChoice: "Option A"},
+			{Cast: true, FirstChoice: "Option C", SecondChoice: "Option A", ThirdChoice: "Option B"},
+			{Cast: true, FirstChoice: "Option A", SecondChoice: "Option B", ThirdChoice: "Option C"},
+			{Cast: true, FirstChoice: "Option B", SecondChoice: "Option A", ThirdChoice: "Option C"},
 		},
 	}
 
@@ -39,11 +39,11 @@ func TestPerformRankedChoiceVotingSecondChoiceMajority(t *testing.T) {
 			{Content: "Option C"},
 		},
 		Ballots: []models.Ballot{
-			{FirstChoice: "Option B", SecondChoice: "Option B", ThirdChoice: "Option C"},
-			{FirstChoice: "Option A", SecondChoice: "Option C", ThirdChoice: "Option A"},
-			{FirstChoice: "Option C", SecondChoice: "Option B", ThirdChoice: "Option B"},
-			{FirstChoice: "Option A", SecondChoice: "Option B", ThirdChoice: "Option C"},
-			{FirstChoice: "Option B", SecondChoice: "Option A", ThirdChoice: "Option C"},
+			{Cast: true, FirstChoice: "Option B", SecondChoice: "Option B", ThirdChoice: "Option C"},
+			{Cast: true, FirstChoice: "Option A", SecondChoice: "Option C", ThirdChoice: "Option A"},
+			{Cast: true, FirstChoice: "Option C", SecondChoice: "Option B", ThirdChoice: "Option B"},
+			{Cast: true, FirstChoice: "Option A", SecondChoice: "Option B", ThirdChoice: "Option C"},
+			{Cast: true, FirstChoice: "Option B", SecondChoice: "Option A", ThirdChoice: "Option C"},
 		},
 	}
 
@@ -64,11 +64,11 @@ func TestPerformRankedChoiceVotingThirdChoiceMajority(t *testing.T) {
 			{Content: "Option C"},
 		},
 		Ballots: []models.Ballot{
-			{FirstChoice: "Option C", SecondChoice: "Option B", ThirdChoice: "Option A"},
-			{FirstChoice: "Option A", SecondChoice: "Option C", ThirdChoice: "Option B"},
-			{FirstChoice: "Option C", SecondChoice: "Option A", ThirdChoice: "Option B"},
-			{FirstChoice: "Option A", SecondChoice: "Option B", ThirdChoice: "Option C"},
-			{FirstChoice: "Option B", SecondChoice: "Option C", ThirdChoice: "Option A"},
+			{Cast: true, FirstChoice: "Option C", SecondChoice: "Option B", ThirdChoice: "Option A"},
+			{Cast: true, FirstChoice: "Option A", SecondChoice: "Option C", ThirdChoice: "Option B"},
+			{Cast: true, FirstChoice: "Option C", SecondChoice: "Option A", ThirdChoice: "Option B"},
+			{Cast: true, FirstChoice: "Option A", SecondChoice: "Option B", ThirdChoice: "Option C"},
+			{Cast: true, FirstChoice: "Option B", SecondChoice: "Option C", ThirdChoice: "Option A"},
 		},
 	}
 
@@ -91,10 +91,10 @@ func TestPerformRankedChoiceVotingRealTest(t *testing.T) {
 		},
 
 		Ballots: []models.Ballot{
-			{FirstChoice: "Weekly Week", SecondChoice: "Fun Suggestion week", ThirdChoice: "Weeker than Weekly Week"},
-			{FirstChoice: "Week Week Week Week Week", SecondChoice: "Weeker than Weekly Week", ThirdChoice: "Fun Suggestion week"},
-			{FirstChoice: "Weeker than Weekly Week", SecondChoice: "Weekly Week", ThirdChoice: "Fun Suggestion week "},
-			{FirstChoice: "Weeker than Weekly Week", SecondChoice: "Fun Suggestion week", ThirdChoice: "Weeker than Weekly Week"},
+			{Cast: true, FirstChoice: "Weekly Week", SecondChoice: "Fun Suggestion week", ThirdChoice: "Weeker than Weekly Week"},
+			{Cast: true, FirstChoice: "Week Week Week Week Week", SecondChoice: "Weeker than Weekly Week", ThirdChoice: "Fun Suggestion week"},
+			{Cast: true, FirstChoice: "Weeker than Weekly Week", SecondChoice: "Weekly Week", ThirdChoice: "Fun Suggestion week "},
+			{Cast: true, FirstChoice: "Weeker than Weekly Week", SecondChoice: "Fun Suggestion week", ThirdChoice: "Weeker than Weekly Week"},
 		},
 	}
 
@@ -120,9 +120,9 @@ func TestPerformRankedChoiceVotingThreeTest(t *testing.T) {
 		},
 
 		Ballots: []models.Ballot{
-			{FirstChoice: "Weekly Week", SecondChoice: "Fun Suggestion week", ThirdChoice: "Weeker than Weekly Week"},
-			{FirstChoice: "Week Week Week Week Week", SecondChoice: "Weeker than Weekly Week", ThirdChoice: "Fun Suggestion week"},
-			{FirstChoice: "Weeker than Weekly Week", SecondChoice: "Weekly Week", ThirdChoice: "Fun Suggestion week"},
+			{Cast: true, FirstChoice: "Weekly Week", SecondChoice: "Fun Suggestion week", ThirdChoice: "Weeker than Weekly Week"},
+			{Cast: true, FirstChoice: "Week Week Week Week Week", SecondChoice: "Weeker than Weekly Week", ThirdChoice: "Fun Suggestion week"},
+			{Cast: true, FirstChoice: "Weeker than Weekly Week", SecondChoice: "Weekly Week", ThirdChoice: "Fun Suggestion week"},
 		},
 	}
 
@@ -145,8 +145,8 @@ func TestPerformRankedChoiceVotingTwoTest(t *testing.T) {
 		},
 
 		Ballots: []models.Ballot{
-			{FirstChoice: "Weekly Week", SecondChoice: "Fun Suggestion week", ThirdChoice: "Weeker than Weekly Week"},
-			{FirstChoice: "Weeker than Weekly Week", SecondChoice: "Weekly Week", ThirdChoice: "Fun Suggestion week "},
+			{Cast: true, FirstChoice: "Weekly Week", SecondChoice: "Fun Suggestion week", ThirdChoice: "Weeker than Weekly Week"},
+			{Cast: true, FirstChoice: "Weeker than Weekly Week", SecondChoice: "Weekly Week", ThirdChoice: "Fun Suggestion week "},
 		},
 	}
 
@@ -172,15 +172,15 @@ func TestPerformRankedChoiceVotingLargeTest(t *testing.T) {
 		},
 
 		Ballots: []models.Ballot{
-			{FirstChoice: "Weekly Week", SecondChoice: "Fun Suggestion week", ThirdChoice: "Best Suggestion week"},
-			{FirstChoice: "Week Week Week Week Week", SecondChoice: "Weeker than Weekly Week", ThirdChoice: "Fun Suggestion week"},
-			{FirstChoice: "Another Suggestion week", SecondChoice: "Weekly Week", ThirdChoice: "Fun Suggestion week"},
-			{FirstChoice: "Derek Suggestion week", SecondChoice: "Fun Suggestion week", ThirdChoice: "Weeker than Weekly Week"},
-			{FirstChoice: "Week Week Week Week Week", SecondChoice: "Weeker than Weekly Week", ThirdChoice: "Fun Suggestion week"},
-			{FirstChoice: "Weeker than Weekly Week", SecondChoice: "Weekly Week", ThirdChoice: "Derek Suggestion week"},
-			{FirstChoice: "Weekly Week", SecondChoice: "Fun Suggestion week", ThirdChoice: "Weeker than Weekly Week"},
-			{FirstChoice: "Best Suggestion week", SecondChoice: "Weeker than Weekly Week", ThirdChoice: "Fun Suggestion week"},
-			{FirstChoice: "Weeker than Weekly Week", SecondChoice: "Derek Suggestion week", ThirdChoice: "Weekly Week"},
+			{Cast: true, FirstChoice: "Weekly Week", SecondChoice: "Fun Suggestion week", ThirdChoice: "Best Suggestion week"},
+			{Cast: true, FirstChoice: "Week Week Week Week Week", SecondChoice: "Weeker than Weekly Week", ThirdChoice: "Fun Suggestion week"},
+			{Cast: true, FirstChoice: "Another Suggestion week", SecondChoice: "Weekly Week", ThirdChoice: "Fun Suggestion week"},
+			{Cast: true, FirstChoice: "Derek Suggestion week", SecondChoice: "Fun Suggestion week", ThirdChoice: "Weeker than Weekly Week"},
+			{Cast: true, FirstChoice: "Week Week Week Week Week", SecondChoice: "Weeker than Weekly Week", ThirdChoice: "Fun Suggestion week"},
+			{Cast: true, FirstChoice: "Weeker than Weekly Week", SecondChoice: "Weekly Week", ThirdChoice: "Derek Suggestion week"},
+			{Cast: true, FirstChoice: "Weekly Week", SecondChoice: "Fun Suggestion week", ThirdChoice: "Weeker than Weekly Week"},
+			{Cast: true, FirstChoice: "Best Suggestion week", SecondChoice: "Weeker than Weekly Week", ThirdChoice: "Fun Suggestion week"},
+			{Cast: true, FirstChoice: "Weeker than Weekly Week", SecondChoice: "Derek Suggestion week", ThirdChoice: "Weekly Week"},
 		},
 	}
 
@@ -188,6 +188,33 @@ func TestPerformRankedChoiceVotingLargeTest(t *testing.T) {
 	println(expectedWinner)
 	winner := poll.PerformRankedChoiceVoting()
 
+	if winner != expectedWinner {
+		t.Errorf("Expected winner to be %s, but got %s", expectedWinner, winner)
+	}
+}
+
+func TestPerformRankedChoiceVotingBlank(t *testing.T) {
+
+	poll := models.Poll{
+		Suggestions: []models.Suggestion{
+			{Content: "Weekbot Makes My Knees Week"},
+			{Content: "Shane Moves Back Home Week"},
+			{Content: "Not Enough Suggestions to Start Poll Week"},
+			{Content: "Its Actually Weekbots Monster Week"},
+			{Content: "Weekbot Lives Week"},
+		},
+		Ballots: []models.Ballot{
+			{Cast: true, FirstChoice: "Weekbot Makes My Knees Week", SecondChoice: "Shane Moves Back Home Week", ThirdChoice: "Not Enough Suggestions to Start Poll Week"},
+			{Cast: true, FirstChoice: "Its Actually Weekbots Monster Week", SecondChoice: "Not Enough Suggestions to Start Poll Week", ThirdChoice: "Weekbot Lives Week"},
+			{Cast: true, FirstChoice: "Not Enough Suggestions to Start Poll Week", SecondChoice: "Shane Moves Back Home Week", ThirdChoice: "Weekbot Makes My Knees Week"},
+			{Cast: false, FirstChoice: "Shane Moves Back Home Week", SecondChoice: "", ThirdChoice: ""},
+			{Cast: false, FirstChoice: "", SecondChoice: "", ThirdChoice: ""},
+		},
+	}
+
+	expectedWinner := "Weekbot Makes My Knees Week"
+	winner := poll.PerformRankedChoiceVoting()
+	println(winner, expectedWinner)
 	if winner != expectedWinner {
 		t.Errorf("Expected winner to be %s, but got %s", expectedWinner, winner)
 	}
