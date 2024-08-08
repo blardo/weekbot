@@ -1,9 +1,9 @@
 package router
 
 import (
-	"weekbot/internal/commands"
-	"weekbot/internal/handlers"
-	"weekbot/internal/services/discord"
+	"weekbot-go/internal/commands"
+	"weekbot-go/internal/handlers"
+	"weekbot-go/internal/services/discord"
 )
 
 func ConfigureHandlers(dsc *discord.DiscordService) *discord.DiscordService {

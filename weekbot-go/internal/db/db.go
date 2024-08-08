@@ -2,7 +2,7 @@ package db
 
 import (
 	"fmt"
-	"weekbot/internal/models"
+	"weekbot-go/internal/models"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

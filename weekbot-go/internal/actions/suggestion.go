@@ -2,8 +2,8 @@ package commands
 
 import (
 	"fmt"
-	"weekbot/internal/db"
-	"weekbot/internal/models"
+	"weekbot-go/internal/db"
+	"weekbot-go/internal/models"
 
 	"github.com/bwmarrin/discordgo"
 )
