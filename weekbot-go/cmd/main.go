@@ -6,11 +6,11 @@ import (
 	"os/signal"
 	"syscall"
 
-	"weekbot/internal/api"
-	"weekbot/internal/models"
-	"weekbot/internal/router"
-	"weekbot/internal/services"
-	"weekbot/internal/services/discord"
+	"weekbot-go/internal/api"
+	"weekbot-go/internal/models"
+	"weekbot-go/internal/router"
+	"weekbot-go/internal/services"
+	"weekbot-go/internal/services/discord"
 )
 
 func main() {
