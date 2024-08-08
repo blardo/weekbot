@@ -12,9 +12,12 @@ services = []
   allowed_public_ports = []
   auto_rollback = true
   cmd = []
-  entrypoint = [weekbotGo/Dockerfile]
+  entrypoint = []
   exec = []
 
 [mounts]
   source = "litefs"
   destination = "/var/lib/litefs"
+
+[build]
+  dockerfile = "weekbotGO/Dockerfile"
