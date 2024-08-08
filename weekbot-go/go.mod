@@ -1,4 +1,4 @@
-module weekbot
+module weekbot-go
 
 go 1.22.0
 
