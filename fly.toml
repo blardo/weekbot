@@ -20,4 +20,4 @@ services = []
   destination = "/var/lib/litefs"
 
 [build]
-  dockerfile = "weekbotGO/Dockerfile"
+  dockerfile = "weekbot-go/Dockerfile"
