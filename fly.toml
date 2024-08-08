@@ -12,7 +12,7 @@ services = []
   allowed_public_ports = []
   auto_rollback = true
   cmd = []
-  entrypoint = []
+  entrypoint = [weekbotGo/Dockerfile]
   exec = []
 
 [mounts]
