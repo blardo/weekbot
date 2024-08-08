@@ -55,7 +55,6 @@ jobs:
         with:
           node-version: "20"
           cache: ${{ steps.detect-package-manager.outputs.manager }}
-          cache-dependency-path: weekbot-js/${{ steps.detect-package-manager.outputs.manager }}.lock
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
