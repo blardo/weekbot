@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	actions "weekbot/internal/actions"
-	commands "weekbot/internal/commands"
-	"weekbot/internal/models"
+	actions "weekbot-go/internal/actions"
+	commands "weekbot-go/internal/commands"
+	"weekbot-go/internal/models"
 
 	"github.com/bwmarrin/discordgo"
 )

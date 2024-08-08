@@ -2,7 +2,7 @@ package models
 
 import (
 	"testing"
-	"weekbot/internal/models"
+	"weekbot-go/internal/models"
 )
 
 func TestPerformRankedChoiceVotingFirstChoiceMajority(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"log"
 	"strconv"
 	"time"
-	"weekbot/internal/models"
+	"weekbot-go/internal/models"
 
 	"github.com/bwmarrin/discordgo"
 )

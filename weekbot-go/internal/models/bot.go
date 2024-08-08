@@ -2,7 +2,7 @@ package models
 
 import (
 	"fmt"
-	"weekbot/internal/services"
+	"weekbot-go/internal/services"
 
 	"gorm.io/gorm"
 )
