@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"weekbot/internal/api"
 	"weekbot/internal/models"
 	"weekbot/internal/router"
 	"weekbot/internal/services"
@@ -13,6 +14,7 @@ import (
 )
 
 func main() {
+	api.Gin()
 	config := services.GetConfig()
 
 	discordService, err := discord.NewDiscordService(config.DiscordToken)
