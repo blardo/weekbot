@@ -19,27 +19,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-      - name: Detect package manager
-        id: detect-package-manager
-        run: |
-          if [ -f "${{ github.workspace }}/weekbot-js/yarn.lock" ]; then
-            echo "manager=yarn" >> $GITHUB_OUTPUT
-            echo "command=install" >> $GITHUB_OUTPUT
-            echo "runner=yarn" >> $GITHUB_OUTPUT
-            exit 0
-          elif [ -f "${{ github.workspace }}/weekbot-js/package.json" ]; then
-            echo "manager=npm" >> $GITHUB_OUTPUT
-            echo "command=ci" >> $GITHUB_OUTPUT
-            echo "runner=npx --no-install" >> $GITHUB_OUTPUT
-            exit 0
-          else
-            echo "Unable to determine package manager"
-            exit 1
-          fi
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -51,16 +34,16 @@ jobs:
         with:
           path: |
             weekbot-js/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('weekbot-js/**/package-lock.json', 'weekbot-js/**/yarn.lock') }}-${{ hashFiles('weekbot-js/**.[jt]s', 'weekbot-js/**.[jt]sx') }}
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('weekbot-js/package-lock.json') }}-${{ hashFiles('weekbot-js/**/*.[jt]s', 'weekbot-js/**/*.[jt]sx') }}
           restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('weekbot-js/**/package-lock.json', 'weekbot-js/**/yarn.lock') }}-
+            ${{ runner.os }}-nextjs-${{ hashFiles('weekbot-js/package-lock.json') }}-
 
       - name: Install dependencies
-        run: ${{ steps.detect-package-manager.outputs.runner }} ${{ steps.detect-package-manager.outputs.command }}
+        run: npm install
         working-directory: weekbot-js
 
       - name: Build with Next.js
-        run: ${{ steps.detect-package-manager.outputs.runner }} next build
+        run: npm run build
         working-directory: weekbot-js
 
       - name: Upload artifact
