@@ -39,18 +39,12 @@ jobs:
             echo "Unable to determine package manager"
             exit 1
           fi
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: ${{ steps.detect-package-manager.outputs.manager }}
-          cache-dependency-path: weekbot-js/${{ steps.detect-package-manager.outputs.manager }}.lock
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-        with:
-          static_site_generator: next
+          node-version: 20
+          cache: npm
+          cache-dependency-path: weekbot-js/package-lock.json
 
       - name: Restore cache
         uses: actions/cache@v4
