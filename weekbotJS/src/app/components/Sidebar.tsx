@@ -1,10 +1,30 @@
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const Sidebar = () => {
   const [view, setView] = useState('view1');
   const [collapsed, setCollapsed] = useState(false);
+  const [pingData, setPingData] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPingData = async () => {
+      try {
+        console.log('Sending request to /api/ping');
+        const response = await fetch('http://localhost:8080/ping');
+        console.log('Received response:', response);
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.text();
+        setPingData(data);
+      } catch (error) {
+        console.error('Error fetching ping:', error);
+      }
+    };
+  
+    fetchPingData();
+  }, [view]);
 
   return (
     <aside className={`bg-gray-200 p-4 ${collapsed ? 'w-16' : 'w-1/4'} transition-all duration-300`}>
@@ -25,6 +45,9 @@ const Sidebar = () => {
         {view === 'view2' && <div>{collapsed ? "" : "Content for View 2"}</div>}
         {view === 'view3' && <div>{collapsed ? "" : "Content for View 3"}</div>}
         {view === 'view4' && <div>{collapsed ? "" : "Content for View 4"}</div>}
+      </div>
+      <div className="mt-4">
+        {pingData && <div>Ping Data: {pingData}</div>}
       </div>
     </aside>
   );
