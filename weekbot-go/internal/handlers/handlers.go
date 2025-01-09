@@ -7,6 +7,7 @@ import (
 
 	actions "weekbot-go/internal/actions"
 	commands "weekbot-go/internal/commands"
+	discord "weekbot-go/internal/services/discord"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -36,20 +37,25 @@ func ParseInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 func ParseChatCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
+	ds, err := discord.GetDiscordService()
+	if err != nil {
+		fmt.Println("Error getting discord service:", err)
+		return
+	}
+
 	// React to only messages not sent by the bot
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
-	// Get the ID of the channel called #week-name and match it to the message's channel, returning if it doesn't match
-	guild, err := s.Guild(m.GuildID)
+	// Use the discord service to get the ID of the week-name channel
+	channelID, err := ds.GetChannelIDByName(m.GuildID, "week-name")
 	if err != nil {
-		fmt.Println("Error retrieving guild:", err)
+		fmt.Println("Error getting channel ID:", err)
 		return
 	}
-	for _, channel := range guild.Channels {
-		if channel.Name == "week-name" && channel.ID != m.ChannelID {
-			return
-		}
+	// If the message isn't in the week-name channel, ignore it
+	if m.ChannelID != channelID {
+		return
 	}
 
 	// If the message ends in the word week, add it to the list of suggestions for the poll
