@@ -2,7 +2,7 @@
 FROM golang:1.22.0-alpine
 
 # Set the Current Working Directory inside the container
-WORKDIR /app/weekbot-go
+WORKDIR /app
 
 # Copy go mod and sum files
 COPY go.mod go.sum ./
