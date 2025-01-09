@@ -78,3 +78,17 @@ func (d *DiscordService) Connected() bool {
 func (d *DiscordService) GetGuilds() []*discordgo.Guild {
 	return d.session.State.Guilds
 }
+
+// GetChannelIDByName returns the ID of a channel by name
+func (d *DiscordService) GetChannelIDByName(guildID, name string) (string, error) {
+	channels, err := d.session.GuildChannels(guildID)
+	if err != nil {
+		return "", err
+	}
+	for _, channel := range channels {
+		if channel.Name == name {
+			return channel.ID, nil
+		}
+	}
+	return "", fmt.Errorf("channel not found")
+}
