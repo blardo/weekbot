@@ -3,10 +3,10 @@ package handlers
 import (
 	"fmt"
 	"strings"
+	"weekbot-go/internal/models"
 
 	actions "weekbot-go/internal/actions"
 	commands "weekbot-go/internal/commands"
-	"weekbot-go/internal/models"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -40,6 +40,11 @@ func ParseChatCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
+	// Only allow messages from the #week-name channel.
+	if m.ChannelID != "week-name" {
+		return
+	}
+
 	// If the message ends in the word week, add it to the list of suggestions for the poll
 	message := strings.Split(m.Content, " ")
 	acceptableWeeks := []string{"week", "week.", "week!", "week?"} // move to constants file
@@ -67,7 +72,6 @@ func HandleReactions(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 		return
 	}
 	reaction, err := s.MessageReactions(r.ChannelID, r.MessageID, emoji, 100, "", "")
-
 	if err != nil {
 		fmt.Println("Error getting reactions:", err)
 		return
