@@ -14,11 +14,11 @@ RUN go mod download
 # Copy the source code into the container
 COPY . .
 
+# Install necessary packages
+RUN apk add --no-cache ca-certificates fuse3 sqlite build-base
+
 # Build the Go app
 RUN go build -o main ./cmd
-
-# Install necessary packages
-RUN apk add --no-cache ca-certificates fuse3 sqlite
 
 # Copy litefs binary from the flyio/litefs image
 COPY --from=flyio/litefs:0.5 /usr/local/bin/litefs /usr/local/bin/litefs
