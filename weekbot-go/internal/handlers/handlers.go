@@ -40,9 +40,16 @@ func ParseChatCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
-	// Only allow messages from the #week-name channel.
-	if m.ChannelID != "week-name" {
+	// Get the ID of the channel called #week-name and match it to the message's channel, returning if it doesn't match
+	guild, err := s.Guild(m.GuildID)
+	if err != nil {
+		fmt.Println("Error retrieving guild:", err)
 		return
+	}
+	for _, channel := range guild.Channels {
+		if channel.Name == "week-name" && channel.ID != m.ChannelID {
+			return
+		}
 	}
 
 	// If the message ends in the word week, add it to the list of suggestions for the poll
