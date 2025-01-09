@@ -23,4 +23,4 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only
+      - run: flyctl deploy weekbot-go --remote-only
