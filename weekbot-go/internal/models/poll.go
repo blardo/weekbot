@@ -103,7 +103,7 @@ func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
 			Label:   label,
 			Value:   value,
 			Default: false,
-			Emoji:   discordgo.ComponentEmoji{Name: "📅"},
+			Emoji:   &discordgo.ComponentEmoji{Name: "📅"},
 		})
 	}
 

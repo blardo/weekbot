@@ -57,7 +57,7 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 							CustomID: "poll_button",
 							Label:    "Vote Here",
 							Style:    discordgo.PrimaryButton,
-							Emoji: discordgo.ComponentEmoji{
+							Emoji: &discordgo.ComponentEmoji{
 								Name: "🗳️",
 							},
 						},
@@ -158,7 +158,7 @@ func handlePollButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 							CustomID: "submit_button",
 							Label:    "Submit",
 							Style:    discordgo.PrimaryButton,
-							Emoji: discordgo.ComponentEmoji{
+							Emoji: &discordgo.ComponentEmoji{
 								Name: "🗳️",
 							},
 						},
