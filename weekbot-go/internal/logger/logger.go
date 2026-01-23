@@ -3,18 +3,31 @@ package logger
 import (
 	"log/slog"
 	"os"
+	"weekbot-go/internal/services"
+
+	"github.com/joho/godotenv"
 )
 
 var defaultLogger *slog.Logger
 
 func init() {
+	// Load .env file early for logger initialization
+	// This ensures environment variables are available even if config hasn't been loaded yet
+	_ = godotenv.Load()
+	_ = godotenv.Load(".env")
+	
 	// Use JSON handler for production, Text handler for development
 	opts := &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}
 	
-	// Check if we're in development mode
-	if os.Getenv("LOG_FORMAT") == "text" || os.Getenv("ENV") == "development" {
+	// Get config to check log format and environment
+	// Note: This will initialize config if not already done
+	config := services.GetConfig()
+	
+	// Check if we're in development mode or text format requested
+	useTextFormat := config.LogFormat == "text" || config.Env == "development"
+	if useTextFormat {
 		defaultLogger = slog.New(slog.NewTextHandler(os.Stdout, opts))
 	} else {
 		defaultLogger = slog.New(slog.NewJSONHandler(os.Stdout, opts))

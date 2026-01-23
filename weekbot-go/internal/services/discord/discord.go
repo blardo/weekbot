@@ -2,8 +2,8 @@ package discord
 
 import (
 	"fmt"
-	"os"
 	"weekbot-go/internal/logger"
+	"weekbot-go/internal/services"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -59,7 +59,11 @@ func (d *DiscordService) AddHandler(handler interface{}) {
 
 // AddSlashCommand adds a slash command to the Discord session
 func (d *DiscordService) AddSlashCommand(command *discordgo.ApplicationCommand, guildID string) error {
-	_, err := d.session.ApplicationCommandCreate(os.Getenv("APP_ID"), guildID, command)
+	config := services.GetConfig()
+	if config.AppID == "" {
+		return fmt.Errorf("APP_ID environment variable is not set")
+	}
+	_, err := d.session.ApplicationCommandCreate(config.AppID, guildID, command)
 	return err
 }
 
