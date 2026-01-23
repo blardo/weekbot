@@ -5,14 +5,10 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"weekbot-go/internal/config"
 
 	"github.com/bwmarrin/discordgo"
 	"gorm.io/gorm"
-)
-
-const (
-	minSuggestionsToStartPoll = 1
-	minUpdicksToQualify       = 1
 )
 
 // Poll is a struct that represents a poll
@@ -35,7 +31,7 @@ func NewOrCurrentPoll(bot *Bot) *Poll {
 
 	suggestions := GetMostRecentUnusedSuggestions(bot.DB)
 	println("Suggestions found", len(suggestions))
-	if len(suggestions) < minSuggestionsToStartPoll {
+	if len(suggestions) < config.MinSuggestionsToStartPoll {
 		fmt.Println("Not enough suggestions to start poll")
 		return nil
 	}
@@ -74,7 +70,7 @@ func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
 			}
 		}
 
-		if !isDuplicate && suggestion.Updicks >= minUpdicksToQualify {
+		if !isDuplicate && suggestion.Updicks >= config.MinUpdicksToQualify {
 			filter = append(filter, suggestion)
 		}
 	}

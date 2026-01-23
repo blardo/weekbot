@@ -3,6 +3,7 @@ package commands
 import (
 	"log"
 	"time"
+	"weekbot-go/internal/config"
 	"weekbot-go/internal/models"
 
 	"github.com/bwmarrin/discordgo"
@@ -305,7 +306,7 @@ func HandleEndPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 			eligibleBallots++
 		}
 	}
-	if eligibleBallots < 1 {
+	if eligibleBallots < config.MinBallotsToEndPoll {
 		s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{

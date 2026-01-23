@@ -3,10 +3,11 @@ package handlers
 import (
 	"fmt"
 	"strings"
+	"weekbot-go/internal/config"
 	"weekbot-go/internal/models"
 
-	actions "weekbot-go/internal/actions"
-	commands "weekbot-go/internal/commands"
+	"weekbot-go/internal/actions"
+	"weekbot-go/internal/commands"
 	discord "weekbot-go/internal/services/discord"
 
 	"github.com/bwmarrin/discordgo"
@@ -39,32 +40,34 @@ func ParseInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 func ParseChatCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
-	ds, err := discord.GetDiscordService()
-	if err != nil {
-		fmt.Println("Error getting discord service:", err)
+	// Early return if message is from bot or has no author
+	if m.Author == nil || m.Author.ID == "" || m.Author.ID == s.State.User.ID {
 		return
 	}
 
-	// React to only messages not sent by the bot
-	if m.Author.ID == s.State.User.ID {
-		return
-	}
-	// Use the discord service to get the ID of the week-name channel
-	channelID, err := ds.GetChannelIDByName(m.GuildID, "week-name")
+	// Use cached channel lookup
+	channelCache := GetChannelCache()
+	channelID, err := channelCache.GetChannelIDByName(m.GuildID, config.WeekNameChannelName)
 	if err != nil {
-		fmt.Println("Error getting channel ID:", err)
+		// Silently ignore if channel not found (bot might not be in that guild yet)
 		return
 	}
+
 	// If the message isn't in the week-name channel, ignore it
 	if m.ChannelID != channelID {
 		return
 	}
 
+	// Check if message should be processed (deduplication)
+	tracker := GetMessageTracker()
+	if !tracker.ShouldProcessMessage(m.ID) {
+		return
+	}
+
 	// If the message ends in the word week, add it to the list of suggestions for the poll
 	message := strings.Split(m.Content, " ")
-	acceptableWeeks := []string{"week", "week.", "week!", "week?"} // move to constants file
-	for _, week := range acceptableWeeks {
-		if strings.ToLower(message[len(message)-1]) == week {
+	for _, week := range config.AcceptableWeekSuffixes {
+		if len(message) > 0 && strings.ToLower(message[len(message)-1]) == week {
 			actions.HandleWeekSuggestion(s, m)
 			break
 		}
@@ -72,30 +75,41 @@ func ParseChatCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func HandleReactions(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
-	// React to only messages not sent by the bot
-	if r.UserID == s.State.User.ID {
+	// Early return if reaction is from bot
+	if r.UserID == "" || r.UserID == s.State.User.ID {
 		return
 	}
-	bot := models.GetBot(r.GuildID)
+
+	// Check if reaction should be processed (deduplication)
+	tracker := GetMessageTracker()
 	emoji := r.Emoji.Name
 	if r.Emoji.ID != "" {
 		emoji = fmt.Sprintf(":%s:%s", r.Emoji.Name, r.Emoji.ID)
 	}
+	
+	if !tracker.ShouldProcessReaction(r.ChannelID, r.MessageID, r.UserID, emoji) {
+		return
+	}
+
+	bot := models.GetBot(r.GuildID)
+	if bot == nil {
+		return
+	}
+
 	m, err := s.ChannelMessage(r.ChannelID, r.MessageID)
 	if err != nil {
 		fmt.Println("Error retrieving message:", err)
 		return
 	}
+	
 	reaction, err := s.MessageReactions(r.ChannelID, r.MessageID, emoji, 100, "", "")
 	if err != nil {
 		fmt.Println("Error getting reactions:", err)
 		return
 	}
 
-	println(r.Emoji.Name)
-	if r.Emoji.Name == "bd" && len(reaction) >= 3 { // bd 👍
-
+	if r.Emoji.Name == config.QualifyingEmoji && len(reaction) >= config.MinUpdicksToQualify {
 		models.UpdateSuggestion(bot.DB, m.Content, r.GuildID, len(reaction))
-		s.MessageReactionAdd(r.ChannelID, r.MessageID, "👍")
+		s.MessageReactionAdd(r.ChannelID, r.MessageID, config.ConfirmationEmoji)
 	}
 }

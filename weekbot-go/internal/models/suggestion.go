@@ -1,6 +1,9 @@
 package models
 
 import (
+	"strings"
+	"weekbot-go/internal/config"
+
 	"gorm.io/gorm"
 )
 
@@ -14,6 +17,7 @@ type Suggestion struct {
 }
 
 func NewSuggestion(db *gorm.DB, content string, guildID string) *Suggestion {
+	content = strings.TrimSpace(content)
 	s := &Suggestion{
 		Content: content,
 		GuildID: guildID,
@@ -35,9 +39,30 @@ func NewSuggestion(db *gorm.DB, content string, guildID string) *Suggestion {
 	return s
 }
 
+func NormalizeSuggestionContent(content string) string {
+	return strings.TrimSpace(strings.ToLower(content))
+}
+
+func FindActiveSuggestionByContent(db *gorm.DB, content string, guildID string) (*Suggestion, bool) {
+	normalized := NormalizeSuggestionContent(content)
+	var suggestion Suggestion
+	result := db.Where("guild_id = ? AND used = ? AND lower(content) = ?", guildID, false, normalized).First(&suggestion)
+	if result.Error != nil {
+		if result.Error != gorm.ErrRecordNotFound {
+			println("Error finding suggestion: ", result.Error)
+		}
+		return nil, false
+	}
+	if suggestion.ID == 0 {
+		return nil, false
+	}
+	return &suggestion, true
+}
+
 func UpdateSuggestion(db *gorm.DB, content string, guildID string, updicks int) {
 	var suggestion Suggestion
-	result := db.First(&suggestion, "content = ? AND guild_id = ?", content, guildID)
+	normalized := NormalizeSuggestionContent(content)
+	result := db.Where("guild_id = ? AND lower(content) = ?", guildID, normalized).First(&suggestion)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			// Suggestion not found, create a new one
@@ -60,6 +85,6 @@ func UpdateSuggestion(db *gorm.DB, content string, guildID string, updicks int) 
 
 func GetMostRecentUnusedSuggestions(db *gorm.DB) []Suggestion {
 	var suggestions []Suggestion
-	db.Where("used = ? AND updicks >= ?", false, 3).Find(&suggestions)
+	db.Where("used = ? AND updicks >= ?", false, config.MinUpdicksToQualify).Find(&suggestions)
 	return suggestions
 }
