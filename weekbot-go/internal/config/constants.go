@@ -3,11 +3,11 @@ package config
 // Poll configuration constants
 const (
 	// MinSuggestionsToStartPoll is the minimum number of suggestions needed to start a poll
-	MinSuggestionsToStartPoll = 1 // Set to 1 for testing, should be 3 in production
+	MinSuggestionsToStartPoll = 3
 	// MinUpdicksToQualify is the minimum number of "bd" reactions needed for a suggestion to qualify
-	MinUpdicksToQualify = 1 // Set to 1 for testing, should be 3 in production
+	MinUpdicksToQualify = 3
 	// MinBallotsToEndPoll is the minimum number of cast ballots needed to end a poll
-	MinBallotsToEndPoll = 1 // Set to 1 for testing, should be 5 in production
+	MinBallotsToEndPoll = 5
 )
 
 // Discord channel and emoji constants
