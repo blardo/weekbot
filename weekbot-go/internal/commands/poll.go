@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"log"
 	"time"
 	"weekbot-go/internal/config"
@@ -76,8 +77,11 @@ func HandlePollComponent(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	switch i.MessageComponentData().CustomID {
 	case "poll_button":
 		handlePollButton(s, i)
+	case "rank_choice":
+		handleRankChoice(s, i)
 	case "first_choice", "second_choice", "third_choice":
-		handlePollChoice(s, i)
+		// Legacy support - redirect to new handler
+		handleRankChoice(s, i)
 	case "submit_button":
 		handlePollSubmit(s, i)
 	default:
@@ -116,55 +120,66 @@ func handlePollButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			Date:    time.Now(),
 			Cast:    false,
 		}
+		ballot.SetChoices([]string{}) // Initialize empty choices array
 		poll.AddBallotForVoter(bot, ballot)
 	}
+
+	// Get current ballot to show existing selections
+	ballot := models.GetBallotByVoterID(bot.DB, userID)
+	selectedChoices := ballot.GetChoices()
+	remainingOptions := poll.GetSelectOptionsExcluding(selectedChoices)
+
+	// Build content showing current selections
+	content := "**Rank your week name preferences:**\n\n"
+	if len(selectedChoices) > 0 {
+		content += "**Your current ranking:**\n"
+		for i, choice := range selectedChoices {
+			content += fmt.Sprintf("%d. %s\n", i+1, choice)
+		}
+		content += "\n"
+	}
+	
+	if len(remainingOptions) == 0 {
+		content += "✅ You've ranked all available options!"
+	} else {
+		content += fmt.Sprintf("Select your #%d choice:", len(selectedChoices)+1)
+	}
+
+	var components []discordgo.MessageComponent
+	
+	// Only show select menu if there are remaining options
+	if len(remainingOptions) > 0 {
+		components = append(components, &discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.SelectMenu{
+					CustomID:    "rank_choice",
+					Placeholder: fmt.Sprintf("Select choice #%d", len(selectedChoices)+1),
+					Options:     remainingOptions,
+				},
+			},
+		})
+	}
+
+	// Always show submit button
+	components = append(components, &discordgo.ActionsRow{
+		Components: []discordgo.MessageComponent{
+			discordgo.Button{
+				CustomID: "submit_button",
+				Label:    "Submit Vote",
+				Style:    discordgo.PrimaryButton,
+				Emoji: &discordgo.ComponentEmoji{
+					Name: "🗳️",
+				},
+			},
+		},
+	})
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "Select your options",
-			Flags:   discordgo.MessageFlagsEphemeral,
-			Components: []discordgo.MessageComponent{
-				&discordgo.ActionsRow{
-					Components: []discordgo.MessageComponent{
-						discordgo.SelectMenu{
-							CustomID:    "first_choice",
-							Placeholder: "Select a week",
-							Options:     poll.GetSelectOptions(),
-						},
-					},
-				},
-				&discordgo.ActionsRow{
-					Components: []discordgo.MessageComponent{
-						discordgo.SelectMenu{
-							CustomID:    "second_choice",
-							Placeholder: "Select a week",
-							Options:     poll.GetSelectOptions(),
-						},
-					},
-				},
-				&discordgo.ActionsRow{
-					Components: []discordgo.MessageComponent{
-						discordgo.SelectMenu{
-							CustomID:    "third_choice",
-							Placeholder: "Select a week",
-							Options:     poll.GetSelectOptions(),
-						},
-					},
-				},
-				&discordgo.ActionsRow{
-					Components: []discordgo.MessageComponent{
-						discordgo.Button{
-							CustomID: "submit_button",
-							Label:    "Submit",
-							Style:    discordgo.PrimaryButton,
-							Emoji: &discordgo.ComponentEmoji{
-								Name: "🗳️",
-							},
-						},
-					},
-				},
-			},
+			Content:    content,
+			Flags:      discordgo.MessageFlagsEphemeral,
+			Components: components,
 		},
 	})
 	if err != nil {
@@ -172,7 +187,7 @@ func handlePollButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
-func handlePollChoice(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func handleRankChoice(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	bot := models.GetBot(i.GuildID)
 	if bot == nil {
 		respondEphemeral(s, i, "Poll is not available in this server.")
@@ -197,26 +212,82 @@ func handlePollChoice(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseDeferredMessageUpdate,
-	})
-	if err != nil {
-		log.Printf("Error responding to interaction: %v", err)
+	if len(i.MessageComponentData().Values) == 0 {
+		respondEphemeral(s, i, "No selection made.")
 		return
 	}
 
-	switch i.MessageComponentData().CustomID {
-	case "first_choice":
-		ballot.FirstChoice = i.MessageComponentData().Values[0]
-	case "second_choice":
-		ballot.SecondChoice = i.MessageComponentData().Values[0]
-	case "third_choice":
-		ballot.ThirdChoice = i.MessageComponentData().Values[0]
-	default:
+	selectedValue := i.MessageComponentData().Values[0]
+	
+	// Add the choice to the ballot
+	if err := ballot.AddChoice(selectedValue); err != nil {
+		logger.Error("Error adding choice to ballot", "error", err, "user_id", userID)
+		respondEphemeral(s, i, "Error saving your choice. Please try again.")
 		return
 	}
 
 	bot.DB.Save(ballot)
+
+	// Get updated choices and remaining options
+	selectedChoices := ballot.GetChoices()
+	remainingOptions := poll.GetSelectOptionsExcluding(selectedChoices)
+
+	// Build updated content
+	content := "**Rank your week name preferences:**\n\n"
+	if len(selectedChoices) > 0 {
+		content += "**Your current ranking:**\n"
+		for i, choice := range selectedChoices {
+			content += fmt.Sprintf("%d. %s\n", i+1, choice)
+		}
+		content += "\n"
+	}
+	
+	if len(remainingOptions) == 0 {
+		content += "✅ You've ranked all available options! Click Submit to finalize your vote."
+	} else {
+		content += fmt.Sprintf("Select your #%d choice:", len(selectedChoices)+1)
+	}
+
+	var components []discordgo.MessageComponent
+	
+	// Only show select menu if there are remaining options
+	if len(remainingOptions) > 0 {
+		components = append(components, &discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.SelectMenu{
+					CustomID:    "rank_choice",
+					Placeholder: fmt.Sprintf("Select choice #%d", len(selectedChoices)+1),
+					Options:     remainingOptions,
+				},
+			},
+		})
+	}
+
+	// Always show submit button
+	components = append(components, &discordgo.ActionsRow{
+		Components: []discordgo.MessageComponent{
+			discordgo.Button{
+				CustomID: "submit_button",
+				Label:    "Submit Vote",
+				Style:    discordgo.PrimaryButton,
+				Emoji: &discordgo.ComponentEmoji{
+					Name: "🗳️",
+				},
+			},
+		},
+	})
+
+	// Update the message with new components
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseUpdateMessage,
+		Data: &discordgo.InteractionResponseData{
+			Content:    content,
+			Components: components,
+		},
+	})
+	if err != nil {
+		logger.Error("Error updating interaction", "error", err, "user_id", userID)
+	}
 }
 
 func handlePollSubmit(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -244,8 +315,9 @@ func handlePollSubmit(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	if ballot.FirstChoice == "" || ballot.SecondChoice == "" || ballot.ThirdChoice == "" {
-		respondEphemeral(s, i, "Please select all options.")
+	choices := ballot.GetChoices()
+	if len(choices) == 0 {
+		respondEphemeral(s, i, "Please rank at least one option before submitting.")
 		return
 	}
 

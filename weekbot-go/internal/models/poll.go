@@ -110,6 +110,25 @@ func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
 	return options
 }
 
+// GetSelectOptionsExcluding returns select options excluding the provided choices
+func (p *Poll) GetSelectOptionsExcluding(excludeChoices []string) []discordgo.SelectMenuOption {
+	allOptions := p.GetSelectOptions()
+	var filtered []discordgo.SelectMenuOption
+	
+	excludeMap := make(map[string]bool)
+	for _, choice := range excludeChoices {
+		excludeMap[choice] = true
+	}
+	
+	for _, option := range allOptions {
+		if !excludeMap[option.Value] {
+			filtered = append(filtered, option)
+		}
+	}
+	
+	return filtered
+}
+
 // IsVoter checks if a user is a voter
 func (p *Poll) HasBallot(voterID string) bool {
 	ballots := p.GetBallots()
@@ -188,8 +207,18 @@ func (p *Poll) PerformRankedChoiceVoting() string {
 			continue
 		}
 		totalEligibleBallots++
-		voteCounts[ballot.FirstChoice]++
-		logger.Debug("First choice vote", "choice", ballot.FirstChoice, "count", voteCounts[ballot.FirstChoice])
+		choices := ballot.GetChoices()
+		if len(choices) > 0 {
+			firstChoice := choices[0]
+			voteCounts[firstChoice]++
+			logger.Debug("First choice vote", "choice", firstChoice, "count", voteCounts[firstChoice])
+		} else {
+			// Fallback to legacy FirstChoice field for backward compatibility
+			if ballot.FirstChoice != "" {
+				voteCounts[ballot.FirstChoice]++
+				logger.Debug("First choice vote (legacy)", "choice", ballot.FirstChoice, "count", voteCounts[ballot.FirstChoice])
+			}
+		}
 	}
 
 	// Remove suggestions that did not receive any votes in the first round
@@ -256,11 +285,37 @@ func (p *Poll) PerformRankedChoiceVoting() string {
 
 		// Redistribute votes
 		for _, ballot := range p.Ballots {
-			if ballot.FirstChoice == minSuggestion {
-				if voteCounts[ballot.SecondChoice] > 0 {
-					voteCounts[ballot.SecondChoice]++
-				} else if voteCounts[ballot.ThirdChoice] > 0 {
-					voteCounts[ballot.ThirdChoice]++
+			choices := ballot.GetChoices()
+			var firstChoice string
+			if len(choices) > 0 {
+				firstChoice = choices[0]
+			} else {
+				// Fallback to legacy FirstChoice field
+				firstChoice = ballot.FirstChoice
+			}
+			
+			if firstChoice == minSuggestion {
+				// Find next available choice in the voter's ranking
+				redistributed := false
+				if len(choices) > 1 {
+					// Try each subsequent choice in order
+					for i := 1; i < len(choices); i++ {
+						nextChoice := choices[i]
+						if voteCounts[nextChoice] > 0 {
+							voteCounts[nextChoice]++
+							redistributed = true
+							break
+						}
+					}
+				}
+				
+				// Fallback to legacy fields if no choices array
+				if !redistributed && len(choices) == 0 {
+					if ballot.SecondChoice != "" && voteCounts[ballot.SecondChoice] > 0 {
+						voteCounts[ballot.SecondChoice]++
+					} else if ballot.ThirdChoice != "" && voteCounts[ballot.ThirdChoice] > 0 {
+						voteCounts[ballot.ThirdChoice]++
+					}
 				}
 			}
 		}
