@@ -406,8 +406,17 @@ func HandleEndPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 		return
 	}
 
-	// change server name
+	// Respond immediately to avoid "application did not respond" error
+	// Use deferred response since we'll be doing heavy work (image generation, API calls)
+	err := s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+	})
+	if err != nil {
+		logger.Error("Error responding to interaction", "error", err, "guild_id", m.GuildID)
+		return
+	}
 
+	// change server name
 	newName := poll.PerformRankedChoiceVoting()
 
 	logger.Info("Ranked choice voting completed", "winner", newName, "poll_id", poll.ID, "guild_id", m.GuildID)
@@ -464,9 +473,13 @@ func HandleEndPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 		logger.Debug("Setting guild banner", "guild_id", m.GuildID, "banner_size_bytes", len(imageBytes))
 	}
 	
-	_, err := s.GuildEdit(m.GuildID, guildParams)
+	_, err = s.GuildEdit(m.GuildID, guildParams)
 	if err != nil {
 		logger.Error("Error changing server name/banner", "error", err, "new_name", newName, "guild_id", m.GuildID, "has_banner", bannerData != "")
+		// Send follow-up message about the error
+		s.FollowupMessageCreate(m.Interaction, true, &discordgo.WebhookParams{
+			Content: fmt.Sprintf("The poll has been ended and the winner is **%s**, but there was an error updating the server name/banner.", newName),
+		})
 		return
 	}
 	logger.Info("Server name and banner updated", "new_name", newName, "banner_updated", bannerData != "", "guild_id", m.GuildID)
@@ -475,12 +488,13 @@ func HandleEndPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	poll.EndPoll(bot.DB, newName)
 	bot.DB.Save(poll)
 
-	s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "The poll has been ended",
-		},
+	// Send follow-up message with the result
+	_, err = s.FollowupMessageCreate(m.Interaction, true, &discordgo.WebhookParams{
+		Content: fmt.Sprintf("The poll has been ended! The winning week name is **%s**.", newName),
 	})
+	if err != nil {
+		logger.Error("Error sending follow-up message", "error", err, "guild_id", m.GuildID)
+	}
 
 	// end listener for select menu
 }
