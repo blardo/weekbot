@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strconv"
 	"syscall"
 
 	"weekbot-go/internal/api"
@@ -14,6 +16,21 @@ import (
 )
 
 func main() {
+	lockPath := filepath.Join(os.TempDir(), "weekbot-go.lock")
+	lockFile, err := os.OpenFile(lockPath, os.O_CREATE|os.O_RDWR, 0600)
+	if err != nil {
+		fmt.Println("Error creating lock file:", err)
+		return
+	}
+	if err := syscall.Flock(int(lockFile.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
+		fmt.Println("Another WeekBot instance is already running.")
+		return
+	}
+	if err := lockFile.Truncate(0); err == nil {
+		_, _ = lockFile.WriteString(strconv.Itoa(os.Getpid()))
+	}
+	defer lockFile.Close()
+
 	api.Gin()
 	config := services.GetConfig()
 

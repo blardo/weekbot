@@ -7,6 +7,9 @@ import (
 )
 
 func ConfigureHandlers(dsc *discord.DiscordService) *discord.DiscordService {
+	// Initialize channel cache with discord service
+	handlers.GetChannelCache().SetDiscordService(dsc)
+	
 	dsc.AddHandler(handlers.ParseInteraction)
 	dsc.AddHandler(handlers.ParseChatCommand)
 	dsc.AddHandler(handlers.HandleReactions)
