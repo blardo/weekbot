@@ -39,3 +39,8 @@ kill_timeout = '5s'
     type = 'connections'
     hard_limit = 25
     soft_limit = 20
+
+# Ensure only one instance runs to avoid LiteFS lease conflicts
+# LiteFS requires a single primary instance for SQLite
+[processes]
+  app = "1"

@@ -43,7 +43,11 @@ lease:
   advertise-url: "http://${HOSTNAME}.vm.${FLY_APP_NAME}.internal:20202"
   candidate: ${FLY_REGION == PRIMARY_REGION}
   promote: true
+  # Timeout for acquiring lease (in seconds)
+  timeout: 10s
 
   consul:
     url: "${FLY_CONSUL_URL}"
     key: "litefs/${FLY_APP_NAME}"
+    # TTL for the lease (in seconds) - helps clear stale leases
+    ttl: 60s
