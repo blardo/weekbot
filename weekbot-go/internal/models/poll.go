@@ -10,6 +10,11 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	minSuggestionsToStartPoll = 1
+	minUpdicksToQualify       = 1
+)
+
 // Poll is a struct that represents a poll
 type Poll struct {
 	gorm.Model
@@ -30,7 +35,7 @@ func NewOrCurrentPoll(bot *Bot) *Poll {
 
 	suggestions := GetMostRecentUnusedSuggestions(bot.DB)
 	println("Suggestions found", len(suggestions))
-	if len(suggestions) < 3 {
+	if len(suggestions) < minSuggestionsToStartPoll {
 		fmt.Println("Not enough suggestions to start poll")
 		return nil
 	}
@@ -69,7 +74,7 @@ func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
 			}
 		}
 
-		if !isDuplicate && suggestion.Updicks >= 3 {
+		if !isDuplicate && suggestion.Updicks >= minUpdicksToQualify {
 			filter = append(filter, suggestion)
 		}
 	}

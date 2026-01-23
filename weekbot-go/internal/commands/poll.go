@@ -289,7 +289,7 @@ func HandleEndPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	bot := models.GetBot(m.GuildID)
 
 	poll := models.GetCurrentPoll(bot.DB)
-	ellibleBallots := 0
+	eligibleBallots := 0
 
 	if poll == nil {
 		s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
@@ -302,10 +302,10 @@ func HandleEndPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	}
 	for _, ballot := range poll.Ballots {
 		if ballot.Cast {
-			ellibleBallots++
+			eligibleBallots++
 		}
 	}
-	if ellibleBallots < 5 {
+	if eligibleBallots < 1 {
 		s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{

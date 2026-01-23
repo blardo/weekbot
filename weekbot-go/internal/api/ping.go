@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-contrib/cors"
@@ -21,5 +22,9 @@ func Gin() {
 			"message": "pong",
 		})
 	})
-	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	go func() {
+		if err := r.Run(); err != nil {
+			log.Printf("Gin server stopped: %v", err)
+		}
+	}()
 }
