@@ -1,12 +1,16 @@
 package commands
 
 import (
+	"bytes"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"time"
 	"weekbot-go/internal/config"
 	"weekbot-go/internal/logger"
 	"weekbot-go/internal/models"
+	"weekbot-go/internal/services"
+	"weekbot-go/internal/services/imagegen"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -407,14 +411,41 @@ func HandleEndPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	newName := poll.PerformRankedChoiceVoting()
 
 	logger.Info("Ranked choice voting completed", "winner", newName, "poll_id", poll.ID, "guild_id", m.GuildID)
-	_, err := s.GuildEdit(m.GuildID, &discordgo.GuildParams{
+	
+	// Generate image for the new week name
+	config := services.GetConfig()
+	imageGen := imagegen.NewImageGenerator(config.OpenAIAPIKey)
+	
+	var iconData string
+	if imageGen != nil {
+		logger.Info("Generating image for week name", "week_name", newName, "guild_id", m.GuildID)
+		imageBytes, err := imageGen.GenerateImageForWeek(newName)
+		if err != nil {
+			logger.Error("Error generating image", "error", err, "week_name", newName, "guild_id", m.GuildID)
+			// Continue without image if generation fails
+		} else {
+			// Convert image to base64 data URI for Discord
+			iconData = fmt.Sprintf("data:image/png;base64,%s", base64.StdEncoding.EncodeToString(imageBytes))
+			logger.Info("Image generated successfully", "size_bytes", len(imageBytes), "week_name", newName, "guild_id", m.GuildID)
+		}
+	} else {
+		logger.Debug("Image generation not configured (no OpenAI API key)", "guild_id", m.GuildID)
+	}
+	
+	// Update server name and icon
+	guildParams := &discordgo.GuildParams{
 		Name: newName,
-	})
+	}
+	if iconData != "" {
+		guildParams.Icon = iconData
+	}
+	
+	_, err := s.GuildEdit(m.GuildID, guildParams)
 	if err != nil {
-		logger.Error("Error changing server name", "error", err, "new_name", newName, "guild_id", m.GuildID)
+		logger.Error("Error changing server name/icon", "error", err, "new_name", newName, "guild_id", m.GuildID)
 		return
 	}
-	logger.Info("Server name changed", "new_name", newName, "guild_id", m.GuildID)
+	logger.Info("Server name changed", "new_name", newName, "icon_updated", iconData != "", "guild_id", m.GuildID)
 
 	// end poll (this will mark only the winning suggestion as used)
 	poll.EndPoll(bot.DB, newName)

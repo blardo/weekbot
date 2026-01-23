@@ -14,6 +14,7 @@ type Config struct {
 	ResetDB      bool
 	LogFormat    string
 	Env          string
+	OpenAIAPIKey string
 }
 
 var globalConfig *Config
@@ -37,6 +38,7 @@ func GetConfig() *Config {
 			ResetDB:      resetDB,
 			LogFormat:    os.Getenv("LOG_FORMAT"),
 			Env:          os.Getenv("ENV"),
+			OpenAIAPIKey: os.Getenv("OPENAI_API_KEY"),
 		}
 	})
 	return globalConfig
