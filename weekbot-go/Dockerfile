@@ -21,7 +21,7 @@ RUN apk add --no-cache ca-certificates fuse3 sqlite build-base
 RUN go build -o main ./cmd
 
 # Copy litefs binary from the flyio/litefs image
-COPY --from=flyio/litefs:0.5 /usr/local/bin/litefs /usr/local/bin/litefs
+COPY --from=flyio/litefs:0.5.14 /usr/local/bin/litefs /usr/local/bin/litefs
 
 # Set the entrypoint to litefs mount
 ENTRYPOINT ["litefs", "mount"]
