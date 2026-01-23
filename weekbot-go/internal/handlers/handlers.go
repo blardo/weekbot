@@ -31,6 +31,8 @@ func ParseInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		default:
 			fmt.Println("Unknown command:", i.ApplicationCommandData().Name)
 		}
+	case discordgo.InteractionMessageComponent:
+		commands.HandlePollComponent(s, i)
 	default: // Ignore other types of interactions
 		return
 	}

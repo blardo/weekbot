@@ -2,7 +2,6 @@ package commands
 
 import (
 	"log"
-	"strconv"
 	"time"
 	"weekbot-go/internal/models"
 
@@ -65,223 +64,225 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 			},
 		},
 	})
+}
 
-	// click button, check if userId in array, if no show modal, select option, submit, add userId to array, add ballot to poll
-	// done =======, done ===================, done ===========,
+func HandlePollComponent(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	if i.Type != discordgo.InteractionMessageComponent {
+		return
+	}
 
-	// poll button handler
+	switch i.MessageComponentData().CustomID {
+	case "poll_button":
+		handlePollButton(s, i)
+	case "first_choice", "second_choice", "third_choice":
+		handlePollChoice(s, i)
+	case "submit_button":
+		handlePollSubmit(s, i)
+	default:
+		return
+	}
+}
 
-	s.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func handlePollButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	bot := models.GetBot(i.GuildID)
+	if bot == nil {
+		respondEphemeral(s, i, "Poll is not available in this server.")
+		return
+	}
 
-		if i.Type == discordgo.InteractionMessageComponent && i.MessageComponentData().CustomID == "poll_button" {
-			bot := models.GetBot(i.GuildID)
-			if bot == nil {
-				println("Bot is nil")
-				return
-			}
-			ballots := models.GetAllBallots(bot.DB)
+	userID, ok := interactionUserID(i)
+	if !ok {
+		respondEphemeral(s, i, "Unable to identify your user.")
+		return
+	}
 
-			for _, ballot := range ballots {
-				println("Ballot: " + ballot.VoterId)
-			}
+	poll := models.NewOrCurrentPoll(bot)
+	if poll == nil {
+		respondEphemeral(s, i, "No active poll right now.")
+		return
+	}
 
-			poll := models.NewOrCurrentPoll(bot)
-			if poll == nil {
-				println("Poll is nil")
-				return
-			}
-			println("handler poll pull ")
+	if poll.BallotCast(userID) {
+		respondEphemeral(s, i, "You have already voted.")
+		return
+	}
 
-			if i.Member == nil {
-				println("Member is nil")
-				return
-			}
+	if !poll.HasBallot(userID) {
+		ballot := models.Ballot{
+			VoterId: userID,
+			PollID:  poll.ID,
+			Date:    time.Now(),
+			Cast:    false,
+		}
+		poll.AddBallotForVoter(bot, ballot)
+	}
 
-			pollBallots := poll.GetBallots()
-			for _, ballot := range pollBallots {
-				println("Poll Button -- Initial Check Poll Ballot: " + ballot.VoterId)
-			}
-
-			if poll.BallotCast(i.Member.User.ID) {
-				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: "You have already voted",
-						Flags:   discordgo.MessageFlagsEphemeral,
-					},
-				})
-				if err != nil {
-					println("Error responding to interaction: %v", err)
-					return
-				}
-			} else if poll.HasBallot(i.Member.User.ID) {
-				println("Has Ballot -- Ballot exists")
-			} else {
-				ballot := models.Ballot{
-					VoterId: i.Member.User.ID,
-					PollID:  poll.ID,
-					Date:    time.Now(),
-					Cast:    false,
-				}
-				println("Has Ballot -- Ballot created")
-				poll.AddBallotForVoter(bot, ballot)
-				pollBallots := poll.GetBallots()
-				for _, ballot := range pollBallots {
-					println("Has Ballot -- Poll Ballot Print at Ballot Creation in : " + ballot.VoterId)
-				}
-			}
-
-			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "Select your options",
-					Flags:   discordgo.MessageFlagsEphemeral,
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "Select your options",
+			Flags:   discordgo.MessageFlagsEphemeral,
+			Components: []discordgo.MessageComponent{
+				&discordgo.ActionsRow{
 					Components: []discordgo.MessageComponent{
-						&discordgo.ActionsRow{
-							Components: []discordgo.MessageComponent{
-								discordgo.SelectMenu{
-									CustomID:    "first_choice",
-									Placeholder: "Select a week",
-									Options:     poll.GetSelectOptions(),
-								},
-							},
+						discordgo.SelectMenu{
+							CustomID:    "first_choice",
+							Placeholder: "Select a week",
+							Options:     poll.GetSelectOptions(),
 						},
-						&discordgo.ActionsRow{
-							Components: []discordgo.MessageComponent{
-								discordgo.SelectMenu{
-									CustomID:    "second_choice",
-									Placeholder: "Select a week",
-									Options:     poll.GetSelectOptions(),
-								},
-							},
+					},
+				},
+				&discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						discordgo.SelectMenu{
+							CustomID:    "second_choice",
+							Placeholder: "Select a week",
+							Options:     poll.GetSelectOptions(),
 						},
-						&discordgo.ActionsRow{
-							Components: []discordgo.MessageComponent{
-								discordgo.SelectMenu{
-									CustomID:    "third_choice",
-									Placeholder: "Select a week",
-									Options:     poll.GetSelectOptions(),
-								},
-							},
+					},
+				},
+				&discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						discordgo.SelectMenu{
+							CustomID:    "third_choice",
+							Placeholder: "Select a week",
+							Options:     poll.GetSelectOptions(),
 						},
-						&discordgo.ActionsRow{
-							Components: []discordgo.MessageComponent{
-								discordgo.Button{
-									CustomID: "submit_button",
-									Label:    "Submit",
-									Style:    discordgo.PrimaryButton,
-									Emoji: discordgo.ComponentEmoji{
-										Name: "🗳️",
-									},
-								},
+					},
+				},
+				&discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						discordgo.Button{
+							CustomID: "submit_button",
+							Label:    "Submit",
+							Style:    discordgo.PrimaryButton,
+							Emoji: discordgo.ComponentEmoji{
+								Name: "🗳️",
 							},
 						},
 					},
 				},
-			})
-
-			if err != nil {
-				log.Printf("Error responding to interaction: %v", err)
-				return
-			}
-		}
+			},
+		},
 	})
-	// create listener for select menu
+	if err != nil {
+		log.Printf("Error responding to interaction: %v", err)
+	}
+}
 
-	s.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if i.Type == discordgo.InteractionApplicationCommand {
-			// This is a slash command interaction
-		} else if i.Type == discordgo.InteractionMessageComponent && i.MessageComponentData().CustomID == "first_choice" {
-			{
-				// This is a select menu interaction
-				// You can access the selected options with i.MessageComponent.Values
-				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseDeferredMessageUpdate,
-				})
-				if err != nil {
-					log.Printf("Error responding to interaction: %v", err)
-					return
-				}
+func handlePollChoice(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	bot := models.GetBot(i.GuildID)
+	if bot == nil {
+		respondEphemeral(s, i, "Poll is not available in this server.")
+		return
+	}
 
-				ballot := models.GetBallotByVoterID(bot.DB, i.Member.User.ID)
-				ballot.FirstChoice = i.MessageComponentData().Values[0]
-				bot.DB.Save(ballot)
-				println("First choice: " + i.MessageComponentData().Values[0])
-			}
-		} else if i.Type == discordgo.InteractionMessageComponent && i.MessageComponentData().CustomID == "second_choice" {
-			{
-				// This is a select menu interaction
-				// You can access the selected options with i.MessageComponent.Values
-				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseDeferredMessageUpdate,
-				})
-				if err != nil {
-					log.Printf("Error responding to interaction: %v", err)
-					return
-				}
-				ballot := models.GetBallotByVoterID(bot.DB, i.Member.User.ID)
-				ballot.SecondChoice = i.MessageComponentData().Values[0]
-				bot.DB.Save(ballot)
-				println("Second choice: " + i.MessageComponentData().Values[0])
-			}
-		} else if i.Type == discordgo.InteractionMessageComponent && i.MessageComponentData().CustomID == "third_choice" {
-			{
-				// This is a select menu interaction
-				// You can access the selected options with i.MessageComponent.Values
-				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseDeferredMessageUpdate,
-				})
-				if err != nil {
-					log.Printf("Error responding to interaction: %v", err)
-					return
-				}
-				ballot := models.GetBallotByVoterID(bot.DB, i.Member.User.ID)
-				ballot.ThirdChoice = i.MessageComponentData().Values[0]
-				bot.DB.Save(ballot)
-				println("Third choice: " + i.MessageComponentData().Values[0])
-			}
-		}
+	userID, ok := interactionUserID(i)
+	if !ok {
+		respondEphemeral(s, i, "Unable to identify your user.")
+		return
+	}
+
+	poll := models.GetCurrentPoll(bot.DB)
+	if poll == nil {
+		respondEphemeral(s, i, "No active poll right now.")
+		return
+	}
+
+	ballot := models.GetBallotByVoterID(bot.DB, userID)
+	if ballot.ID == 0 || ballot.PollID != poll.ID {
+		respondEphemeral(s, i, "Please click \"Vote Here\" first.")
+		return
+	}
+
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredMessageUpdate,
 	})
+	if err != nil {
+		log.Printf("Error responding to interaction: %v", err)
+		return
+	}
 
-	s.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if i.Type == discordgo.InteractionApplicationCommand {
-			// This is a slash command interaction
-		} else if i.Type == discordgo.InteractionMessageComponent && i.MessageComponentData().CustomID == "submit_button" {
-			ballot := models.GetBallotByVoterID(bot.DB, i.Member.User.ID)
-			if ballot.FirstChoice == "" || ballot.SecondChoice == "" || ballot.ThirdChoice == "" {
-				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: "Please select all options",
-						Flags:   discordgo.MessageFlagsEphemeral,
-					},
-				})
-				if err != nil {
-					log.Printf("Error responding to interaction: %v", err)
-					return
-				}
-			} else {
+	switch i.MessageComponentData().CustomID {
+	case "first_choice":
+		ballot.FirstChoice = i.MessageComponentData().Values[0]
+	case "second_choice":
+		ballot.SecondChoice = i.MessageComponentData().Values[0]
+	case "third_choice":
+		ballot.ThirdChoice = i.MessageComponentData().Values[0]
+	default:
+		return
+	}
 
-				ballot.Cast = true
-				println("ballot cast: " + strconv.FormatBool(ballot.Cast))
-				bot.DB.Save(&ballot)
-				println("Ballot: " + ballot.VoterId + " " + ballot.FirstChoice + " " + ballot.SecondChoice + " " + ballot.ThirdChoice)
+	bot.DB.Save(ballot)
+}
 
-				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: "Your vote has been submitted",
-						Flags:   discordgo.MessageFlagsEphemeral,
-					},
-				})
-				if err != nil {
-					log.Printf("Error responding to interaction: %v", err)
-					return
-				}
-			}
+func handlePollSubmit(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	bot := models.GetBot(i.GuildID)
+	if bot == nil {
+		respondEphemeral(s, i, "Poll is not available in this server.")
+		return
+	}
 
-		}
+	userID, ok := interactionUserID(i)
+	if !ok {
+		respondEphemeral(s, i, "Unable to identify your user.")
+		return
+	}
+
+	poll := models.GetCurrentPoll(bot.DB)
+	if poll == nil {
+		respondEphemeral(s, i, "No active poll right now.")
+		return
+	}
+
+	ballot := models.GetBallotByVoterID(bot.DB, userID)
+	if ballot.ID == 0 || ballot.PollID != poll.ID {
+		respondEphemeral(s, i, "Please click \"Vote Here\" first.")
+		return
+	}
+
+	if ballot.FirstChoice == "" || ballot.SecondChoice == "" || ballot.ThirdChoice == "" {
+		respondEphemeral(s, i, "Please select all options.")
+		return
+	}
+
+	ballot.Cast = true
+	bot.DB.Save(ballot)
+
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "Your vote has been submitted",
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
 	})
+	if err != nil {
+		log.Printf("Error responding to interaction: %v", err)
+	}
+}
+
+func interactionUserID(i *discordgo.InteractionCreate) (string, bool) {
+	if i.Member != nil && i.Member.User != nil {
+		return i.Member.User.ID, true
+	}
+	if i.User != nil {
+		return i.User.ID, true
+	}
+	return "", false
+}
+
+func respondEphemeral(s *discordgo.Session, i *discordgo.InteractionCreate, message string) {
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: message,
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
+	})
+	if err != nil {
+		log.Printf("Error responding to interaction: %v", err)
+	}
 }
 
 func HandleEndPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
