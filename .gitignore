@@ -1,0 +1,23 @@
+# Secrets - never commit these
+dtk
+appid
+
+# Environment files
+.env
+.env.local
+
+# Build artifacts
+weekbot-go/main
+weekbot-go/*.db
+*.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
