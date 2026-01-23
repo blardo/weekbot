@@ -9,7 +9,6 @@ import (
 
 	"weekbot-go/internal/actions"
 	"weekbot-go/internal/commands"
-	discord "weekbot-go/internal/services/discord"
 
 	"github.com/bwmarrin/discordgo"
 )
