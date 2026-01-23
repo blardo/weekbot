@@ -69,7 +69,16 @@ func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
 			}
 		}
 
+		// Filter out bot messages and invalid suggestions
 		if !isDuplicate && suggestion.Updicks >= config.MinUpdicksToQualify {
+			// Skip suggestions that look like bot messages or are too long
+			content := strings.ToLower(suggestion.Content)
+			if strings.Contains(content, "week suggestion added") ||
+				strings.Contains(content, "weekbot will add") ||
+				strings.Contains(content, "already exists") ||
+				len(suggestion.Content) > 100 {
+				continue
+			}
 			filter = append(filter, suggestion)
 		}
 	}
@@ -78,9 +87,21 @@ func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
 		filter = filter[:25]
 	}
 	for _, suggestion := range filter {
+		// Discord requires label and value to be 1-100 characters
+		// Truncate if necessary, but prefer keeping the full content
+		label := suggestion.Content
+		value := suggestion.Content
+		if len(label) > 100 {
+			label = label[:97] + "..."
+		}
+		if len(value) > 100 {
+			// For value, we can use a hash or ID, but for now truncate
+			// In the future, we might want to use suggestion.ID as value
+			value = value[:100]
+		}
 		options = append(options, discordgo.SelectMenuOption{
-			Label:   suggestion.Content,
-			Value:   suggestion.Content,
+			Label:   label,
+			Value:   value,
 			Default: false,
 			Emoji:   discordgo.ComponentEmoji{Name: "📅"},
 		})
