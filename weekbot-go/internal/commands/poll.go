@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"log"
@@ -415,36 +416,60 @@ func HandleEndPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	config := services.GetConfig()
 	imageGen := imagegen.NewImageGenerator(config.GeminiAPIKey)
 	
-	var iconData string
+	var imageBytes []byte
+	var bannerData string
 	if imageGen != nil {
-		logger.Info("Generating image for week name", "week_name", newName, "guild_id", m.GuildID)
-		imageBytes, err := imageGen.GenerateImageForWeek(newName)
+		logger.Info("Starting image generation for week name", "week_name", newName, "guild_id", m.GuildID, "channel_id", m.ChannelID)
+		var err error
+		imageBytes, err = imageGen.GenerateImageForWeek(newName)
 		if err != nil {
 			logger.Error("Error generating image", "error", err, "week_name", newName, "guild_id", m.GuildID)
 			// Continue without image if generation fails
 		} else {
-			// Convert image to base64 data URI for Discord
-			iconData = fmt.Sprintf("data:image/png;base64,%s", base64.StdEncoding.EncodeToString(imageBytes))
 			logger.Info("Image generated successfully", "size_bytes", len(imageBytes), "week_name", newName, "guild_id", m.GuildID)
+			
+			// Convert image to base64 data URI for Discord banner
+			bannerData = fmt.Sprintf("data:image/png;base64,%s", base64.StdEncoding.EncodeToString(imageBytes))
+			
+			// Send image to the channel
+			logger.Info("Sending generated image to channel", "channel_id", m.ChannelID, "guild_id", m.GuildID)
+			_, err = s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+				Content: fmt.Sprintf("Generated banner image for **%s**:", newName),
+				Files: []*discordgo.File{
+					{
+						Name:        fmt.Sprintf("%s-banner.png", newName),
+						ContentType: "image/png",
+						Reader:      bytes.NewReader(imageBytes),
+					},
+				},
+			})
+			if err != nil {
+				logger.Error("Error sending image to channel", "error", err, "channel_id", m.ChannelID, "guild_id", m.GuildID)
+				// Continue even if sending to channel fails
+			} else {
+				logger.Info("Image sent to channel successfully", "channel_id", m.ChannelID, "guild_id", m.GuildID)
+			}
 		}
 	} else {
-		logger.Debug("Image generation not configured (no OpenAI API key)", "guild_id", m.GuildID)
+		logger.Debug("Image generation not configured (no Gemini API key)", "guild_id", m.GuildID)
 	}
 	
-	// Update server name and icon
+	// Update server name and banner
+	logger.Info("Updating guild settings", "new_name", newName, "has_banner", bannerData != "", "guild_id", m.GuildID)
 	guildParams := &discordgo.GuildParams{
 		Name: newName,
 	}
-	if iconData != "" {
-		guildParams.Icon = iconData
+	if bannerData != "" {
+		guildParams.Banner = bannerData
+		logger.Debug("Setting guild banner", "guild_id", m.GuildID, "banner_size_bytes", len(imageBytes))
 	}
 	
 	_, err := s.GuildEdit(m.GuildID, guildParams)
 	if err != nil {
-		logger.Error("Error changing server name/icon", "error", err, "new_name", newName, "guild_id", m.GuildID)
+		logger.Error("Error changing server name/banner", "error", err, "new_name", newName, "guild_id", m.GuildID, "has_banner", bannerData != "")
 		return
 	}
-	logger.Info("Server name changed", "new_name", newName, "icon_updated", iconData != "", "guild_id", m.GuildID)
+	logger.Info("Server name and banner updated", "new_name", newName, "banner_updated", bannerData != "", "guild_id", m.GuildID)
 
 	// end poll (this will mark only the winning suggestion as used)
 	poll.EndPoll(bot.DB, newName)
