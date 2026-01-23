@@ -25,7 +25,8 @@ func HandleWeekSuggestion(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	suggestion := strings.TrimSpace(m.Content)
-	log.Printf("Processing suggestion: %s (message ID: %s)", suggestion, m.ID)
+	normalized := models.NormalizeSuggestionContent(suggestion)
+	log.Printf("Processing suggestion: %s (normalized: %s, message ID: %s)", suggestion, normalized, m.ID)
 
 	// Create a new suggestion from the message
 	bot := models.GetBot(m.GuildID)
@@ -34,8 +35,10 @@ func HandleWeekSuggestion(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	if _, exists := models.FindActiveSuggestionByContent(bot.DB, suggestion, bot.GuildID); exists {
-		log.Printf("Suggestion already exists: %s (message ID: %s, author: %s)", suggestion, m.ID, m.Author.ID)
+	existing, exists := models.FindActiveSuggestionByContent(bot.DB, suggestion, bot.GuildID)
+	if exists {
+		log.Printf("Suggestion already exists: %s (normalized: %s, existing ID: %d, existing content: %s, message ID: %s, author: %s)", 
+			suggestion, normalized, existing.ID, existing.Content, m.ID, m.Author.ID)
 		_, err := s.ChannelMessageSend(m.ChannelID, "Week suggestion already exists: "+suggestion)
 		if err != nil {
 			log.Printf("Error sending 'already exists' message: %v", err)

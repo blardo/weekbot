@@ -41,6 +41,8 @@ func NewSuggestion(db *gorm.DB, content string, guildID string) *Suggestion {
 	return s
 }
 
+// NormalizeSuggestionContent normalizes suggestion content for comparison
+// Exported so it can be used in other packages for logging/debugging
 func NormalizeSuggestionContent(content string) string {
 	return strings.TrimSpace(strings.ToLower(content))
 }
