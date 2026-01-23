@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"weekbot-go/internal/models"
@@ -37,19 +38,38 @@ func HandleWeekSuggestion(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	// Check if suggestion is already in the current poll (if one exists)
+	// Duplicates should only apply within the current poll, not across all polls
+	currentPoll := models.GetCurrentPoll(bot.DB)
+	if currentPoll != nil {
+		for _, pollSuggestion := range currentPoll.Suggestions {
+			if models.NormalizeSuggestionContent(pollSuggestion.Content) == normalized {
+				log.Printf("Suggestion already exists in current poll: %s (normalized: %s, poll_id: %d, message ID: %s, author: %s)", 
+					suggestion, normalized, currentPoll.ID, m.ID, m.Author.ID)
+				_, err := s.ChannelMessageSend(m.ChannelID, "Week suggestion already exists in the current poll: "+suggestion)
+				if err != nil {
+					log.Printf("Error sending 'already exists' message: %v", err)
+				}
+				return
+			}
+		}
+	}
+
 	// Use a transaction to atomically check and create the suggestion
 	// This prevents race conditions where the same message is processed twice
 	var newSuggestion *models.Suggestion
-	var alreadyExists bool
 	
 	err := bot.DB.Transaction(func(tx *gorm.DB) error {
-		// Check if suggestion already exists
-		existing, exists := models.FindActiveSuggestionByContent(tx, suggestion, bot.GuildID)
-		if exists {
-			alreadyExists = true
-			log.Printf("Suggestion already exists in transaction: %s (normalized: %s, existing ID: %d, existing content: %s, message ID: %s, author: %s)", 
-				suggestion, normalized, existing.ID, existing.Content, m.ID, m.Author.ID)
-			return nil // Return nil to commit (we're just checking)
+		// If there's no current poll, check for duplicate unused suggestions
+		// If there is a current poll, we already checked above, so just create the new suggestion
+		if currentPoll == nil {
+			existing, exists := models.FindActiveSuggestionByContent(tx, suggestion, bot.GuildID)
+			if exists {
+				log.Printf("Suggestion already exists as unused (no current poll): %s (normalized: %s, existing ID: %d, message ID: %s)", 
+					suggestion, normalized, existing.ID, m.ID)
+				// Return error to prevent creating duplicate
+				return fmt.Errorf("suggestion already exists")
+			}
 		}
 		
 		// Create the suggestion within the transaction
@@ -70,16 +90,13 @@ func HandleWeekSuggestion(s *discordgo.Session, m *discordgo.MessageCreate) {
 	})
 	
 	if err != nil {
-		log.Printf("Transaction error: %v", err)
-		return
-	}
-	
-	if alreadyExists {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Week suggestion already exists: "+suggestion)
-		if err != nil {
-			log.Printf("Error sending 'already exists' message: %v", err)
+		if err.Error() == "suggestion already exists" {
+			_, err := s.ChannelMessageSend(m.ChannelID, "Week suggestion already exists: "+suggestion)
+			if err != nil {
+				log.Printf("Error sending 'already exists' message: %v", err)
+			}
 		} else {
-			log.Printf("Sent 'already exists' message for suggestion: %s", suggestion)
+			log.Printf("Transaction error: %v", err)
 		}
 		return
 	}

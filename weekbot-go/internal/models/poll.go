@@ -322,19 +322,34 @@ func (p *Poll) PerformRankedChoiceVoting() string {
 	}
 }
 
-// EndPoll ends the poll and marks all suggestions as used
-func (p *Poll) EndPoll(db *gorm.DB) {
-	logger.Info("Ending poll", "poll_id", p.ID)
+// EndPoll ends the poll and marks only the winning suggestion as used
+// Non-winning suggestions can be suggested again in future polls
+func (p *Poll) EndPoll(db *gorm.DB, winningSuggestion string) {
+	logger.Info("Ending poll", "poll_id", p.ID, "winner", winningSuggestion)
 	p.InProgress = false
 	p.IsComplete = true
 
-	// Mark all suggestions in this poll as used and save to database
+	// Only mark the winning suggestion as used
+	// Other suggestions can be suggested again in future polls
+	winningNormalized := NormalizeSuggestionContent(winningSuggestion)
 	for _, suggestion := range p.Suggestions {
-		suggestion.Used = true
-		if err := db.Save(&suggestion).Error; err != nil {
-			logger.Error("Error marking suggestion as used", "error", err, "suggestion_id", suggestion.ID, "poll_id", p.ID)
+		suggestionNormalized := NormalizeSuggestionContent(suggestion.Content)
+		if strings.EqualFold(suggestionNormalized, winningNormalized) {
+			suggestion.Used = true
+			if err := db.Save(&suggestion).Error; err != nil {
+				logger.Error("Error marking winning suggestion as used", "error", err, "suggestion_id", suggestion.ID, "poll_id", p.ID)
+			} else {
+				logger.Debug("Marked winning suggestion as used", "suggestion_id", suggestion.ID, "content", suggestion.Content, "poll_id", p.ID)
+			}
 		} else {
-			logger.Debug("Marked suggestion as used", "suggestion_id", suggestion.ID, "content", suggestion.Content, "poll_id", p.ID)
+			// Reset the suggestion so it can be used in future polls
+			// Clear the PollID so it's not associated with this poll anymore
+			suggestion.PollID = 0
+			if err := db.Save(&suggestion).Error; err != nil {
+				logger.Error("Error resetting suggestion for future polls", "error", err, "suggestion_id", suggestion.ID, "poll_id", p.ID)
+			} else {
+				logger.Debug("Reset suggestion for future polls", "suggestion_id", suggestion.ID, "content", suggestion.Content, "poll_id", p.ID)
+			}
 		}
 	}
 }
