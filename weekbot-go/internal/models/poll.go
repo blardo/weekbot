@@ -145,7 +145,8 @@ func (p *Poll) BallotCast(voterID string) bool {
 	var ballot Ballot
 	ballots := p.GetBallots()
 	for _, b := range ballots {
-		if b.VoterId == voterID {
+		// Only check ballots for this specific poll
+		if b.VoterId == voterID && b.PollID == p.ID {
 			ballot = b
 			break
 		}
