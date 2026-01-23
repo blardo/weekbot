@@ -30,8 +30,8 @@ func NewOrCurrentPoll(bot *Bot) *Poll {
 
 	suggestions := GetMostRecentUnusedSuggestions(bot.DB)
 	logger.Debug("Checking suggestions for new poll", "count", len(suggestions), "guild_id", bot.GuildID)
-	if len(suggestions) < config.MinSuggestionsToStartPoll {
-		logger.Info("Not enough suggestions to start poll", "count", len(suggestions), "required", config.MinSuggestionsToStartPoll, "guild_id", bot.GuildID)
+	if len(suggestions) < config.MinSuggestionsToStartPoll() {
+		logger.Info("Not enough suggestions to start poll", "count", len(suggestions), "required", config.MinSuggestionsToStartPoll(), "guild_id", bot.GuildID)
 		return nil
 	}
 
@@ -70,7 +70,7 @@ func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
 		}
 
 		// Filter out bot messages and invalid suggestions
-		if !isDuplicate && suggestion.Updicks >= config.MinUpdicksToQualify {
+		if !isDuplicate && suggestion.Updicks >= config.MinUpdicksToQualify() {
 			// Skip suggestions that look like bot messages or are too long
 			content := strings.ToLower(suggestion.Content)
 			if strings.Contains(content, "week suggestion added") ||

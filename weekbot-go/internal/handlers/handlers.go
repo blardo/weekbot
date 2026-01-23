@@ -110,7 +110,7 @@ func HandleReactions(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 		return
 	}
 
-	if r.Emoji.Name == config.QualifyingEmoji && len(reaction) >= config.MinUpdicksToQualify {
+	if r.Emoji.Name == config.QualifyingEmoji && len(reaction) >= config.MinUpdicksToQualify() {
 		models.UpdateSuggestion(bot.DB, m.Content, r.GuildID, len(reaction))
 		s.MessageReactionAdd(r.ChannelID, r.MessageID, config.ConfirmationEmoji)
 	}

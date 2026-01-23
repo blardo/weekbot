@@ -395,7 +395,7 @@ func HandleEndPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 			eligibleBallots++
 		}
 	}
-	if eligibleBallots < config.MinBallotsToEndPoll {
+	if eligibleBallots < config.MinBallotsToEndPoll() {
 		s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{

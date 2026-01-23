@@ -2,6 +2,7 @@ package services
 
 import (
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -9,12 +10,15 @@ import (
 )
 
 type Config struct {
-	DiscordToken string
-	AppID        string
-	ResetDB      bool
-	LogFormat    string
-	Env          string
-	GeminiAPIKey string
+	DiscordToken          string
+	AppID                 string
+	ResetDB               bool
+	LogFormat             string
+	Env                   string
+	GeminiAPIKey          string
+	MinSuggestionsToStart int
+	MinUpdicksToQualify   int
+	MinBallotsToEndPoll   int
 }
 
 var globalConfig *Config
@@ -32,14 +36,35 @@ func GetConfig() *Config {
 		
 		resetDB := strings.EqualFold(os.Getenv("RESET_DB"), "true")
 		
+		// Parse threshold values with defaults
+		minSuggestionsToStart := parseIntEnv("MIN_SUGGESTIONS_TO_START_POLL", 3)
+		minUpdicksToQualify := parseIntEnv("MIN_UPDICKS_TO_QUALIFY", 3)
+		minBallotsToEndPoll := parseIntEnv("MIN_BALLOTS_TO_END_POLL", 5)
+		
 		globalConfig = &Config{
-			DiscordToken: os.Getenv("DISCORD_TOKEN"),
-			AppID:        os.Getenv("APP_ID"),
-			ResetDB:      resetDB,
-			LogFormat:    os.Getenv("LOG_FORMAT"),
-			Env:          os.Getenv("ENV"),
-			GeminiAPIKey: os.Getenv("GEMINI_API_KEY"),
+			DiscordToken:          os.Getenv("DISCORD_TOKEN"),
+			AppID:                 os.Getenv("APP_ID"),
+			ResetDB:               resetDB,
+			LogFormat:             os.Getenv("LOG_FORMAT"),
+			Env:                   os.Getenv("ENV"),
+			GeminiAPIKey:          os.Getenv("GEMINI_API_KEY"),
+			MinSuggestionsToStart: minSuggestionsToStart,
+			MinUpdicksToQualify:   minUpdicksToQualify,
+			MinBallotsToEndPoll:   minBallotsToEndPoll,
 		}
 	})
 	return globalConfig
+}
+
+// parseIntEnv parses an integer environment variable, returning defaultValue if not set or invalid
+func parseIntEnv(key string, defaultValue int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return defaultValue
+	}
+	return parsed
 }
