@@ -1,111 +1,83 @@
 package imagegen
 
 import (
-	"bytes"
-	"encoding/base64"
-	"encoding/json"
+	"context"
 	"fmt"
-	"io"
-	"net/http"
+
+	"google.golang.org/genai"
 )
 
-// ImageGenerator handles image generation
+// ImageGenerator handles image generation using Google Gemini
 type ImageGenerator struct {
-	apiKey string
-	apiURL string
+	client *genai.Client
+	model  string
 }
 
-// NewImageGenerator creates a new image generator
+// NewImageGenerator creates a new image generator using Gemini API
 func NewImageGenerator(apiKey string) *ImageGenerator {
 	if apiKey == "" {
 		return nil
 	}
+
+	ctx := context.Background()
+	
+	// Create client with API key
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		APIKey:  apiKey,
+		Backend: genai.BackendGeminiAPI,
+	})
+	if err != nil {
+		// Return nil if client creation fails - will be handled gracefully
+		return nil
+	}
+
 	return &ImageGenerator{
-		apiKey: apiKey,
-		apiURL: "https://api.openai.com/v1/images/generations",
+		client: client,
+		model:  "gemini-2.5-flash-image", // Fast image generation model
 	}
 }
 
-// GenerateImage generates an image from a text prompt
+// GenerateImage generates an image from a text prompt using Gemini
 // Returns the image data as bytes, or an error
 func (ig *ImageGenerator) GenerateImage(prompt string) ([]byte, error) {
-	if ig == nil || ig.apiKey == "" {
+	if ig == nil || ig.client == nil {
 		return nil, fmt.Errorf("image generator not configured")
 	}
 
 	// Enhance the prompt for better results
-	enhancedPrompt := fmt.Sprintf("A vibrant, colorful banner image representing: %s. Style: modern, abstract, celebratory, suitable for a Discord server icon", prompt)
+	enhancedPrompt := fmt.Sprintf("Create a vibrant, colorful banner image representing: %s. Style: modern, abstract, celebratory, suitable for a Discord server icon (1024x1024 pixels)", prompt)
 
-	requestBody := map[string]interface{}{
-		"model":  "dall-e-3",
-		"prompt": enhancedPrompt,
-		"n":      1,
-		"size":   "1024x1024",
-	}
-
-	jsonData, err := json.Marshal(requestBody)
+	ctx := context.Background()
+	
+	// Generate images using Gemini image generation model
+	result, err := ig.client.Models.GenerateImages(ctx, ig.model, enhancedPrompt, &genai.GenerateImagesConfig{
+		NumberOfImages: 1,
+		AspectRatio:    "1:1",
+	})
 	if err != nil {
-		return nil, fmt.Errorf("error marshaling request: %w", err)
+		return nil, fmt.Errorf("error generating image: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", ig.apiURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
+	if len(result.GeneratedImages) == 0 {
+		return nil, fmt.Errorf("no images in response")
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", ig.apiKey))
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("error making request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(body))
+	// Extract image data from response
+	generatedImage := result.GeneratedImages[0]
+	if generatedImage.Image == nil {
+		return nil, fmt.Errorf("no image data in generated image")
 	}
 
-	var response struct {
-		Data []struct {
-			URL           string `json:"url"`
-			B64JSON       string `json:"b64_json,omitempty"`
-			RevisedPrompt string `json:"revised_prompt,omitempty"`
-		} `json:"data"`
+	// Prefer ImageBytes if available, otherwise fetch from GCSURI
+	if len(generatedImage.Image.ImageBytes) > 0 {
+		return generatedImage.Image.ImageBytes, nil
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, fmt.Errorf("error decoding response: %w", err)
+	if generatedImage.Image.GCSURI != "" {
+		return nil, fmt.Errorf("image stored at GCS URI, not supported: %s", generatedImage.Image.GCSURI)
 	}
 
-	if len(response.Data) == 0 {
-		return nil, fmt.Errorf("no image data in response")
-	}
-
-	// If we have base64 data, use it; otherwise fetch from URL
-	if response.Data[0].B64JSON != "" {
-		imageData, err := base64.StdEncoding.DecodeString(response.Data[0].B64JSON)
-		if err != nil {
-			return nil, fmt.Errorf("error decoding base64 image: %w", err)
-		}
-		return imageData, nil
-	}
-
-	// Fetch image from URL
-	imgResp, err := http.Get(response.Data[0].URL)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching image from URL: %w", err)
-	}
-	defer imgResp.Body.Close()
-
-	imageData, err := io.ReadAll(imgResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading image data: %w", err)
-	}
-
-	return imageData, nil
+	return nil, fmt.Errorf("no image data found in response")
 }
 
 // GenerateImageForWeek generates an image for a week name

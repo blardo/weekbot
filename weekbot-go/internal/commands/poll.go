@@ -413,7 +413,7 @@ func HandleEndPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	
 	// Generate image for the new week name
 	config := services.GetConfig()
-	imageGen := imagegen.NewImageGenerator(config.OpenAIAPIKey)
+	imageGen := imagegen.NewImageGenerator(config.GeminiAPIKey)
 	
 	var iconData string
 	if imageGen != nil {
