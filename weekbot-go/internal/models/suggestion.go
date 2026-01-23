@@ -48,16 +48,28 @@ func NormalizeSuggestionContent(content string) string {
 func FindActiveSuggestionByContent(db *gorm.DB, content string, guildID string) (*Suggestion, bool) {
 	normalized := NormalizeSuggestionContent(content)
 	var suggestion Suggestion
-	result := db.Where("guild_id = ? AND used = ? AND lower(content) = ?", guildID, false, normalized).First(&suggestion)
+	
+	// Use exact match with normalized comparison
+	// Note: SQLite's lower() function should work, but let's be explicit
+	result := db.Where("guild_id = ? AND used = ?", guildID, false).
+		Where("LOWER(TRIM(content)) = ?", normalized).
+		First(&suggestion)
+	
 	if result.Error != nil {
-		if result.Error != gorm.ErrRecordNotFound {
-			logger.Error("Error finding suggestion", "error", result.Error, "content", content, "guild_id", guildID)
+		if result.Error == gorm.ErrRecordNotFound {
+			logger.Debug("Suggestion not found (new suggestion)", "content", content, "normalized", normalized, "guild_id", guildID)
+			return nil, false
 		}
+		logger.Error("Error finding suggestion", "error", result.Error, "content", content, "normalized", normalized, "guild_id", guildID)
 		return nil, false
 	}
+	
 	if suggestion.ID == 0 {
+		logger.Debug("Suggestion found but ID is 0", "content", content, "guild_id", guildID)
 		return nil, false
 	}
+	
+	logger.Debug("Found existing suggestion", "id", suggestion.ID, "content", suggestion.Content, "normalized", normalized, "guild_id", guildID)
 	return &suggestion, true
 }
 
