@@ -322,13 +322,19 @@ func (p *Poll) PerformRankedChoiceVoting() string {
 	}
 }
 
-// EndPoll ends the poll
-func (p *Poll) EndPoll() {
+// EndPoll ends the poll and marks all suggestions as used
+func (p *Poll) EndPoll(db *gorm.DB) {
 	logger.Info("Ending poll", "poll_id", p.ID)
 	p.InProgress = false
 	p.IsComplete = true
 
+	// Mark all suggestions in this poll as used and save to database
 	for _, suggestion := range p.Suggestions {
 		suggestion.Used = true
+		if err := db.Save(&suggestion).Error; err != nil {
+			logger.Error("Error marking suggestion as used", "error", err, "suggestion_id", suggestion.ID, "poll_id", p.ID)
+		} else {
+			logger.Debug("Marked suggestion as used", "suggestion_id", suggestion.ID, "content", suggestion.Content, "poll_id", p.ID)
+		}
 	}
 }

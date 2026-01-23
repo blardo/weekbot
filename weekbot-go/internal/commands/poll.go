@@ -416,8 +416,8 @@ func HandleEndPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	}
 	logger.Info("Server name changed", "new_name", newName, "guild_id", m.GuildID)
 
-	// end poll
-	poll.EndPoll()
+	// end poll (this will mark suggestions as used)
+	poll.EndPoll(bot.DB)
 	bot.DB.Save(poll)
 
 	s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{

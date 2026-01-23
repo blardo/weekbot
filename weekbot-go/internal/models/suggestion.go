@@ -102,7 +102,11 @@ func UpdateSuggestion(db *gorm.DB, content string, guildID string, updicks int) 
 
 func GetMostRecentUnusedSuggestions(db *gorm.DB) []Suggestion {
 	var suggestions []Suggestion
-	db.Where("used = ? AND updicks >= ?", false, config.MinUpdicksToQualify).Find(&suggestions)
+	// Get unused suggestions that have enough upvotes, ordered by most recent first
+	db.Where("used = ? AND updicks >= ?", false, config.MinUpdicksToQualify).
+		Order("created_at DESC").
+		Find(&suggestions)
+	logger.Debug("Found unused suggestions", "count", len(suggestions))
 	return suggestions
 }
 
