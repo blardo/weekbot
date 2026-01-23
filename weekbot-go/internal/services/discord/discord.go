@@ -3,6 +3,7 @@ package discord
 import (
 	"fmt"
 	"os"
+	"weekbot-go/internal/logger"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -25,9 +26,8 @@ func NewDiscordService(token string) (*DiscordService, error) {
 	}
 
 	session.AddHandler(func(s *discordgo.Session, m *discordgo.Ready) {
-		fmt.Println("Connected to Discord as", m.User.Username)
-		fmt.Println("Invite URL: https://discordapp.com/oauth2/authorize?client_id=" + m.User.ID + "&scope=bot&permissions=0")
-		fmt.Println("Currently on", len(m.Guilds), "servers")
+		logger.Info("Connected to Discord", "username", m.User.Username, "user_id", m.User.ID, "guilds", len(m.Guilds))
+		logger.Info("Invite URL", "url", fmt.Sprintf("https://discordapp.com/oauth2/authorize?client_id=%s&scope=bot&permissions=0", m.User.ID))
 	})
 
 	discordConnection = &DiscordService{session}

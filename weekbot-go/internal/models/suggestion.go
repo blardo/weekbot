@@ -3,6 +3,7 @@ package models
 import (
 	"strings"
 	"weekbot-go/internal/config"
+	"weekbot-go/internal/logger"
 
 	"gorm.io/gorm"
 )
@@ -26,15 +27,16 @@ func NewSuggestion(db *gorm.DB, content string, guildID string) *Suggestion {
 	}
 	result := db.Create(s)
 	if result.Error != nil {
+		logger.Error("Failed to create suggestion", "error", result.Error, "content", content, "guild_id", guildID)
 		panic(result.Error)
 	} else {
-		println("Suggestion created ", result.RowsAffected)
+		logger.Debug("Suggestion created", "rows_affected", result.RowsAffected, "content", content, "guild_id", guildID)
 	}
 
-	// Debug print to verify the saved record
+	// Debug: verify the saved record
 	var savedSuggestion Suggestion
 	db.First(&savedSuggestion, "content = ? AND guild_id = ?", content, guildID)
-	println("Saved Suggestion: ", savedSuggestion.Content, savedSuggestion.GuildID, savedSuggestion.Updicks)
+	logger.Debug("Saved suggestion verified", "content", savedSuggestion.Content, "guild_id", savedSuggestion.GuildID, "updicks", savedSuggestion.Updicks)
 
 	return s
 }
@@ -49,7 +51,7 @@ func FindActiveSuggestionByContent(db *gorm.DB, content string, guildID string) 
 	result := db.Where("guild_id = ? AND used = ? AND lower(content) = ?", guildID, false, normalized).First(&suggestion)
 	if result.Error != nil {
 		if result.Error != gorm.ErrRecordNotFound {
-			println("Error finding suggestion: ", result.Error)
+			logger.Error("Error finding suggestion", "error", result.Error, "content", content, "guild_id", guildID)
 		}
 		return nil, false
 	}
@@ -69,17 +71,18 @@ func UpdateSuggestion(db *gorm.DB, content string, guildID string, updicks int) 
 			suggestion = *NewSuggestion(db, content, guildID)
 		} else {
 			// Some other error occurred
-			println("Error updating suggestion: ", result.Error)
+			logger.Error("Error finding suggestion for update", "error", result.Error, "content", content, "guild_id", guildID)
 		}
 	}
 
 	suggestion.Updicks = updicks
 	result = db.Save(&suggestion)
 	if result.Error != nil {
-		println("Error updating suggestion: ", result.Error)
+		logger.Error("Error saving suggestion update", "error", result.Error, "content", content, "guild_id", guildID, "updicks", updicks)
+		return
 	}
 
-	println("Suggestion updated ", result.RowsAffected)
+	logger.Debug("Suggestion updated", "rows_affected", result.RowsAffected, "content", content, "guild_id", guildID, "updicks", updicks)
 
 }
 

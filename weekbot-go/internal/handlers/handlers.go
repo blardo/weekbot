@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"weekbot-go/internal/config"
+	"weekbot-go/internal/logger"
 	"weekbot-go/internal/models"
 
 	"weekbot-go/internal/actions"
@@ -30,7 +31,7 @@ func ParseInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		case "endpoll":
 			commands.HandleEndPoll(s, i)
 		default:
-			fmt.Println("Unknown command:", i.ApplicationCommandData().Name)
+			logger.Warn("Unknown command", "command", i.ApplicationCommandData().Name)
 		}
 	case discordgo.InteractionMessageComponent:
 		commands.HandlePollComponent(s, i)
@@ -98,13 +99,13 @@ func HandleReactions(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 
 	m, err := s.ChannelMessage(r.ChannelID, r.MessageID)
 	if err != nil {
-		fmt.Println("Error retrieving message:", err)
+		logger.Error("Error retrieving message", "error", err, "channel_id", r.ChannelID, "message_id", r.MessageID)
 		return
 	}
 	
 	reaction, err := s.MessageReactions(r.ChannelID, r.MessageID, emoji, 100, "", "")
 	if err != nil {
-		fmt.Println("Error getting reactions:", err)
+		logger.Error("Error getting reactions", "error", err, "channel_id", r.ChannelID, "message_id", r.MessageID, "emoji", emoji)
 		return
 	}
 

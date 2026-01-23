@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 	"weekbot-go/internal/config"
+	"weekbot-go/internal/logger"
 	"weekbot-go/internal/models"
 
 	"github.com/bwmarrin/discordgo"
@@ -16,7 +17,7 @@ func HandleWeekPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 	poll := models.NewOrCurrentPoll(bot)
 
 	if poll == nil {
-		println("poll is nil")
+		logger.Warn("Poll is nil, cannot start poll", "guild_id", m.GuildID)
 		s.InteractionRespond(m.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -320,15 +321,15 @@ func HandleEndPoll(s *discordgo.Session, m *discordgo.InteractionCreate) {
 
 	newName := poll.PerformRankedChoiceVoting()
 
-	println("New name is: " + newName)
+	logger.Info("Ranked choice voting completed", "winner", newName, "poll_id", poll.ID, "guild_id", m.GuildID)
 	_, err := s.GuildEdit(m.GuildID, &discordgo.GuildParams{
 		Name: newName,
 	})
 	if err != nil {
-		log.Printf("Error changing server name: %v", err)
-
+		logger.Error("Error changing server name", "error", err, "new_name", newName, "guild_id", m.GuildID)
+		return
 	}
-	log.Printf("Server name changed to: %s", newName)
+	logger.Info("Server name changed", "new_name", newName, "guild_id", m.GuildID)
 
 	// end poll
 	poll.EndPoll()

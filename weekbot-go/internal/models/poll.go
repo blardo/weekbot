@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"weekbot-go/internal/config"
+	"weekbot-go/internal/logger"
 
 	"github.com/bwmarrin/discordgo"
 	"gorm.io/gorm"
@@ -25,14 +26,14 @@ type Poll struct {
 func NewOrCurrentPoll(bot *Bot) *Poll {
 	poll := GetCurrentPoll(bot.DB)
 	if poll != nil {
-		println("Current poll found")
+		logger.Debug("Current poll found", "poll_id", poll.ID, "guild_id", bot.GuildID)
 		return poll
 	}
 
 	suggestions := GetMostRecentUnusedSuggestions(bot.DB)
-	println("Suggestions found", len(suggestions))
+	logger.Debug("Checking suggestions for new poll", "count", len(suggestions), "guild_id", bot.GuildID)
 	if len(suggestions) < config.MinSuggestionsToStartPoll {
-		fmt.Println("Not enough suggestions to start poll")
+		logger.Info("Not enough suggestions to start poll", "count", len(suggestions), "required", config.MinSuggestionsToStartPoll, "guild_id", bot.GuildID)
 		return nil
 	}
 
@@ -40,8 +41,8 @@ func NewOrCurrentPoll(bot *Bot) *Poll {
 		Suggestions: suggestions,
 		InProgress:  true,
 	}
-	println("Creating new poll")
 	bot.DB.Create(poll)
+	logger.Info("Created new poll", "poll_id", poll.ID, "suggestions", len(suggestions), "guild_id", bot.GuildID)
 	return poll
 }
 
@@ -50,7 +51,7 @@ func GetCurrentPoll(db *gorm.DB) *Poll {
 	var poll Poll
 	db.Preload("Suggestions").Preload("Ballots").Where("in_progress = ? and is_complete = ?", true, false).First(&poll)
 	if poll.ID == 0 {
-		fmt.Println("No current poll found")
+		logger.Debug("No current poll found")
 		return nil
 	}
 
@@ -94,12 +95,11 @@ func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
 func (p *Poll) HasBallot(voterID string) bool {
 	ballots := p.GetBallots()
 	for _, ballot := range ballots {
-		println("Ballot VoterID "+ballot.VoterId, ballot.FirstChoice, ballot.SecondChoice, ballot.ThirdChoice, strconv.FormatBool(ballot.Cast))
+		logger.Debug("Checking ballot", "voter_id", ballot.VoterId, "poll_id", ballot.PollID, "cast", ballot.Cast)
 		if ballot.VoterId == voterID && ballot.PollID == p.ID {
 			return true
 		}
 	}
-	println("has ballot return false")
 	return false
 }
 
@@ -144,13 +144,12 @@ func (p *Poll) AddBallotForVoter(bot *Bot, ballot Ballot) {
 			UserID: ballot.VoterId,
 		}
 		bot.DB.Create(&voter)
-		println("ABFV -- Voter created")
-
+		logger.Debug("Created new voter", "user_id", ballot.VoterId, "guild_id", bot.GuildID)
 	}
 	bot.DB.Create(&ballot)
 
 	// Add the ballot to the poll
-	println("ABFV -- Adding ballot to poll")
+	logger.Debug("Adding ballot to poll", "voter_id", ballot.VoterId, "poll_id", p.ID)
 	p.AddBallotToPoll(bot, ballot)
 
 }
@@ -171,16 +170,16 @@ func (p *Poll) PerformRankedChoiceVoting() string {
 		}
 		totalEligibleBallots++
 		voteCounts[ballot.FirstChoice]++
-		println("FC", ballot.FirstChoice, voteCounts[ballot.FirstChoice])
+		logger.Debug("First choice vote", "choice", ballot.FirstChoice, "count", voteCounts[ballot.FirstChoice])
 	}
 
 	// Remove suggestions that did not receive any votes in the first round
 	for suggestion, count := range voteCounts {
-		println("SUGGESTION COUNT", suggestion, count)
+		logger.Debug("Suggestion vote count", "suggestion", suggestion, "count", count)
 	}
 	for suggestion, count := range voteCounts {
 		if count == 0 {
-			println("deleted: " + suggestion)
+			logger.Debug("Removing suggestion with zero votes", "suggestion", suggestion)
 			delete(voteCounts, suggestion)
 		}
 	}
@@ -251,7 +250,7 @@ func (p *Poll) PerformRankedChoiceVoting() string {
 
 // EndPoll ends the poll
 func (p *Poll) EndPoll() {
-	println("Ending poll")
+	logger.Info("Ending poll", "poll_id", p.ID)
 	p.InProgress = false
 	p.IsComplete = true
 

@@ -1,7 +1,7 @@
 package models
 
 import (
-	"fmt"
+	"weekbot-go/internal/logger"
 	"weekbot-go/internal/services"
 
 	"gorm.io/gorm"
@@ -30,7 +30,7 @@ func NewBot(config *services.Config, gid string) (*Bot, error) {
 
 	botInstances[gid] = bot
 
-	fmt.Println("Connected to guild", gid)
+	logger.Info("Connected to guild", "guild_id", gid)
 
 	return bot, nil
 }
