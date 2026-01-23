@@ -29,6 +29,8 @@ func ParseInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			commands.HandleWeekPoll(s, i)
 		case "endpoll":
 			commands.HandleEndPoll(s, i)
+		case "listweeks":
+			commands.HandleListWeeks(s, i)
 		default:
 			logger.Warn("Unknown command", "command", i.ApplicationCommandData().Name)
 		}

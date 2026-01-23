@@ -21,6 +21,7 @@ func SetCommands(dsc *discord.DiscordService, guildId string) *discord.DiscordSe
 	dsc.AddSlashCommand(commands.GetPingCommand(), guildId)
 	dsc.AddSlashCommand(commands.GetPollCommand(), guildId)
 	dsc.AddSlashCommand(commands.EndPollCommand(), guildId)
+	dsc.AddSlashCommand(commands.GetListWeeksCommand(), guildId)
 
 	return dsc
 }
