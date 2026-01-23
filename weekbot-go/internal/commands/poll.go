@@ -124,8 +124,21 @@ func handlePollButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		poll.AddBallotForVoter(bot, ballot)
 	}
 
-	// Get current ballot to show existing selections
-	ballot := models.GetBallotByVoterID(bot.DB, userID)
+	// Get current ballot to show existing selections (must be for this poll)
+	ballot := models.GetBallotByVoterIDAndPollID(bot.DB, userID, poll.ID)
+	if ballot.ID == 0 {
+		// Ballot should have been created above, but if not, create it now
+		ballot = &models.Ballot{
+			VoterId: userID,
+			PollID:  poll.ID,
+			Date:    time.Now(),
+			Cast:    false,
+		}
+		ballot.SetChoices([]string{})
+		poll.AddBallotForVoter(bot, *ballot)
+		// Reload to get the created ballot
+		ballot = models.GetBallotByVoterIDAndPollID(bot.DB, userID, poll.ID)
+	}
 	selectedChoices := ballot.GetChoices()
 	remainingOptions := poll.GetSelectOptionsExcluding(selectedChoices)
 
@@ -206,8 +219,8 @@ func handleRankChoice(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	ballot := models.GetBallotByVoterID(bot.DB, userID)
-	if ballot.ID == 0 || ballot.PollID != poll.ID {
+	ballot := models.GetBallotByVoterIDAndPollID(bot.DB, userID, poll.ID)
+	if ballot.ID == 0 {
 		respondEphemeral(s, i, "Please click \"Vote Here\" first.")
 		return
 	}
@@ -309,8 +322,8 @@ func handlePollSubmit(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	ballot := models.GetBallotByVoterID(bot.DB, userID)
-	if ballot.ID == 0 || ballot.PollID != poll.ID {
+	ballot := models.GetBallotByVoterIDAndPollID(bot.DB, userID, poll.ID)
+	if ballot.ID == 0 {
 		respondEphemeral(s, i, "Please click \"Vote Here\" first.")
 		return
 	}

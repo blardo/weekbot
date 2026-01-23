@@ -89,10 +89,18 @@ func (b *Ballot) SetCast(cast bool) {
 	b.Cast = cast
 }
 
-// GetBallotByID gets a ballot by its ID
+// GetBallotByVoterID gets a ballot by voter ID (may return ballot from any poll)
+// Use GetBallotByVoterIDAndPollID for poll-specific lookups
 func GetBallotByVoterID(db *gorm.DB, voterID string) *Ballot {
 	var ballot Ballot
-	db.Where("voter_id = ?", voterID).First(&ballot)
+	db.Where("voter_id = ?", voterID).Order("created_at DESC").First(&ballot)
+	return &ballot
+}
+
+// GetBallotByVoterIDAndPollID gets a ballot by voter ID and poll ID
+func GetBallotByVoterIDAndPollID(db *gorm.DB, voterID string, pollID uint) *Ballot {
+	var ballot Ballot
+	db.Where("voter_id = ? AND poll_id = ?", voterID, pollID).First(&ballot)
 	return &ballot
 }
 
@@ -105,24 +113,30 @@ func GetAllBallots(db *gorm.DB) []Ballot {
 
 // GetChoices returns the ranked choices as a slice
 // If Choices is empty, migrates from legacy First/Second/ThirdChoice fields
+// Removes duplicates to prevent issues from migration
 func (b *Ballot) GetChoices() []string {
 	if b.Choices != "" {
 		var choices []string
 		if err := json.Unmarshal([]byte(b.Choices), &choices); err == nil && len(choices) > 0 {
-			return choices
+			// Remove duplicates (shouldn't happen, but safety check)
+			return removeDuplicates(choices)
 		}
 	}
 	
 	// Fallback: migrate from legacy fields
 	var choices []string
-	if b.FirstChoice != "" {
+	seen := make(map[string]bool)
+	if b.FirstChoice != "" && !seen[b.FirstChoice] {
 		choices = append(choices, b.FirstChoice)
+		seen[b.FirstChoice] = true
 	}
-	if b.SecondChoice != "" {
+	if b.SecondChoice != "" && !seen[b.SecondChoice] {
 		choices = append(choices, b.SecondChoice)
+		seen[b.SecondChoice] = true
 	}
-	if b.ThirdChoice != "" {
+	if b.ThirdChoice != "" && !seen[b.ThirdChoice] {
 		choices = append(choices, b.ThirdChoice)
+		seen[b.ThirdChoice] = true
 	}
 	
 	// Auto-migrate: save to Choices field if we found legacy data
@@ -131,6 +145,19 @@ func (b *Ballot) GetChoices() []string {
 	}
 	
 	return choices
+}
+
+// removeDuplicates removes duplicate strings from a slice while preserving order
+func removeDuplicates(slice []string) []string {
+	seen := make(map[string]bool)
+	var result []string
+	for _, item := range slice {
+		if !seen[item] {
+			seen[item] = true
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 // SetChoices sets the ranked choices from a slice
