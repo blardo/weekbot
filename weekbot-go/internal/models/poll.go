@@ -1,9 +1,7 @@
 package models
 
 import (
-	"fmt"
 	"math/rand"
-	"strconv"
 	"strings"
 	"weekbot-go/internal/config"
 	"weekbot-go/internal/logger"

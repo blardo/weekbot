@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"weekbot-go/internal/logger"
 	"weekbot-go/internal/services"
 
@@ -20,6 +21,17 @@ func NewBot(config *services.Config, gid string) (*Bot, error) {
 	db, err := services.GetDB(gid)
 	if err != nil {
 		return nil, err
+	}
+
+	// Auto-migrate all models
+	err = db.AutoMigrate(
+		&Suggestion{},
+		&Ballot{},
+		&Voter{},
+		&Poll{},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
 
 	bot := &Bot{
