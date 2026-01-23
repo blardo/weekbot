@@ -25,4 +25,4 @@ jobs:
       - uses: superfly/flyctl-actions/setup-flyctl@master
       # Scale to 1 instance to avoid LiteFS lease conflicts
       - run: flyctl scale count 1 --app weekbot
-      - run: cd weekbot-go && flyctl deploy --remote-only
+      - run: flyctl deploy weekbot-go --remote-only
