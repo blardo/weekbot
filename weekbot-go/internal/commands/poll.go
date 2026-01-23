@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"bytes"
 	"encoding/base64"
 	"fmt"
 	"log"
