@@ -28,8 +28,6 @@ func NewBot(config *services.Config, gid string) (*Bot, error) {
 		DB:      db,
 	}
 
-	configureSchema(db)
-
 	botInstances[gid] = bot
 
 	fmt.Println("Connected to guild", gid)
@@ -43,11 +41,4 @@ func GetBot(guildID string) *Bot {
 
 func GetBotInstances() map[string]*Bot {
 	return botInstances
-}
-
-func configureSchema(db *gorm.DB) {
-	db.AutoMigrate(&Suggestion{})
-	db.AutoMigrate(&Poll{})
-	db.AutoMigrate(&Voter{})
-	db.AutoMigrate(&Ballot{})
 }

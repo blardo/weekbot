@@ -88,3 +88,10 @@ func GetMostRecentUnusedSuggestions(db *gorm.DB) []Suggestion {
 	db.Where("used = ? AND updicks >= ?", false, config.MinUpdicksToQualify).Find(&suggestions)
 	return suggestions
 }
+
+// GetAllSuggestions gets all suggestions for a guild
+func GetAllSuggestions(db *gorm.DB, guildID string) ([]Suggestion, error) {
+	var suggestions []Suggestion
+	err := db.Where("guild_id = ?", guildID).Find(&suggestions).Error
+	return suggestions, err
+}
