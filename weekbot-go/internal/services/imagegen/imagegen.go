@@ -58,41 +58,36 @@ func (ig *ImageGenerator) GenerateImage(prompt string) ([]byte, error) {
 	ctx := context.Background()
 	
 	// Generate images using Gemini image generation model
-	result, err := ig.client.Models.GenerateImages(ctx, ig.model, enhancedPrompt, &genai.GenerateImagesConfig{
-		NumberOfImages: 1,
-		AspectRatio:    "16:9", // Banner aspect ratio
-	})
+	// Use GenerateContent - the model will automatically return images when using image generation models
+	result, err := ig.client.Models.GenerateContent(ctx, ig.model, genai.Text(enhancedPrompt), nil)
 	if err != nil {
 		logger.Error("ImageGenerator: API call failed", "error", err, "model", ig.model, "prompt", prompt)
 		return nil, fmt.Errorf("error generating image: %w", err)
 	}
 
-	logger.Debug("ImageGenerator: API call succeeded", "images_count", len(result.GeneratedImages))
+	logger.Debug("ImageGenerator: API call succeeded", "candidates_count", len(result.Candidates))
 
-	if len(result.GeneratedImages) == 0 {
-		logger.Error("ImageGenerator: No images in API response")
-		return nil, fmt.Errorf("no images in response")
+	if len(result.Candidates) == 0 {
+		logger.Error("ImageGenerator: No candidates in API response")
+		return nil, fmt.Errorf("no candidates in response")
 	}
 
-	// Extract image data from response
-	generatedImage := result.GeneratedImages[0]
-	if generatedImage.Image == nil {
-		logger.Error("ImageGenerator: Generated image has nil Image field")
-		return nil, fmt.Errorf("no image data in generated image")
+	// Extract image data from response parts
+	candidate := result.Candidates[0]
+	if len(candidate.Content.Parts) == 0 {
+		logger.Error("ImageGenerator: No parts in candidate content")
+		return nil, fmt.Errorf("no parts in response")
 	}
 
-	// Prefer ImageBytes if available, otherwise fetch from GCSURI
-	if len(generatedImage.Image.ImageBytes) > 0 {
-		logger.Info("ImageGenerator: Image generated successfully", "size_bytes", len(generatedImage.Image.ImageBytes), "mime_type", generatedImage.Image.MIMEType)
-		return generatedImage.Image.ImageBytes, nil
+	// Look for image data in the parts
+	for _, part := range candidate.Content.Parts {
+		if part.InlineData != nil && len(part.InlineData.Data) > 0 {
+			logger.Info("ImageGenerator: Image generated successfully", "size_bytes", len(part.InlineData.Data), "mime_type", part.InlineData.MIMEType)
+			return part.InlineData.Data, nil
+		}
 	}
 
-	if generatedImage.Image.GCSURI != "" {
-		logger.Error("ImageGenerator: Image stored at GCS URI (not supported)", "gcs_uri", generatedImage.Image.GCSURI)
-		return nil, fmt.Errorf("image stored at GCS URI, not supported: %s", generatedImage.Image.GCSURI)
-	}
-
-	logger.Error("ImageGenerator: No image data found in response")
+	logger.Error("ImageGenerator: No image data found in response parts")
 	return nil, fmt.Errorf("no image data found in response")
 }
 
