@@ -29,6 +29,7 @@ func NewBot(config *services.Config, gid string) (*Bot, error) {
 		&Ballot{},
 		&Voter{},
 		&Poll{},
+		&ServerConfig{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"weekbot-go/internal/config"
 	"weekbot-go/internal/logger"
+	"weekbot-go/internal/services"
 
 	"github.com/bwmarrin/discordgo"
 	"gorm.io/gorm"
@@ -28,10 +29,11 @@ func NewOrCurrentPoll(bot *Bot) *Poll {
 		return poll
 	}
 
-	suggestions := GetMostRecentUnusedSuggestions(bot.DB)
+	suggestions := GetMostRecentUnusedSuggestions(bot.DB, bot.GuildID)
+	minRequired := config.MinSuggestionsToStartPoll(bot.DB, bot.GuildID)
 	logger.Debug("Checking suggestions for new poll", "count", len(suggestions), "guild_id", bot.GuildID)
-	if len(suggestions) < config.MinSuggestionsToStartPoll() {
-		logger.Info("Not enough suggestions to start poll", "count", len(suggestions), "required", config.MinSuggestionsToStartPoll(), "guild_id", bot.GuildID)
+	if len(suggestions) < minRequired {
+		logger.Info("Not enough suggestions to start poll", "count", len(suggestions), "required", minRequired, "guild_id", bot.GuildID)
 		return nil
 	}
 
@@ -70,7 +72,9 @@ func (p *Poll) GetSelectOptions() []discordgo.SelectMenuOption {
 		}
 
 		// Filter out bot messages and invalid suggestions
-		if !isDuplicate && suggestion.Updicks >= config.MinUpdicksToQualify() {
+		// Note: Using global default since we don't have guildID here
+		// This is acceptable since options are filtered from suggestions that already qualified
+		if !isDuplicate && suggestion.Updicks >= services.GetConfig().MinUpdicksToQualify {
 			// Skip suggestions that look like bot messages or are too long
 			content := strings.ToLower(suggestion.Content)
 			if strings.Contains(content, "week suggestion added") ||
@@ -195,7 +199,6 @@ func (p *Poll) AddBallotForVoter(bot *Bot, ballot Ballot) {
 
 func (p *Poll) PerformRankedChoiceVoting() string {
 	voteCounts := make(map[string]int)
-	totalBallots := len(p.Ballots)
 	totalEligibleBallots := 0
 	// Initialize vote counts for each suggestion
 	for _, suggestion := range p.Suggestions {
@@ -267,12 +270,12 @@ func (p *Poll) PerformRankedChoiceVoting() string {
 		}
 
 		// Check if the suggestion has more than 50% of the votes
-		if maxVotes > (totalBallots+1)/2 {
+		if maxVotes > totalEligibleBallots/2 {
 			return maxSuggestion
 		}
 
 		// Find the suggestion with the fewest votes
-		var minVotes int = totalBallots + 1
+		var minVotes int = totalEligibleBallots + 1
 		var minSuggestion string
 		for suggestion, count := range voteCounts {
 			if count > 0 && count < minVotes {

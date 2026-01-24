@@ -42,7 +42,7 @@ func HandleListWeeks(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	// Get all unused suggestions
-	unusedSuggestions := models.GetMostRecentUnusedSuggestions(bot.DB)
+	unusedSuggestions := models.GetMostRecentUnusedSuggestions(bot.DB, i.GuildID)
 	response.WriteString(fmt.Sprintf("**Unused Suggestions (%d):**\n", len(unusedSuggestions)))
 	if len(unusedSuggestions) > 0 {
 		for idx, suggestion := range unusedSuggestions {

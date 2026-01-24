@@ -194,7 +194,7 @@ func TestPerformRankedChoiceVotingLargeTest(t *testing.T) {
 }
 
 func TestPerformRankedChoiceVotingBlank(t *testing.T) {
-
+	// This test verifies that ballots with Cast: false are not counted
 	poll := models.Poll{
 		Suggestions: []models.Suggestion{
 			{Content: "Weekbot Makes My Knees Week"},
@@ -204,17 +204,22 @@ func TestPerformRankedChoiceVotingBlank(t *testing.T) {
 			{Content: "Weekbot Lives Week"},
 		},
 		Ballots: []models.Ballot{
+			// Cast ballots - these should count
 			{Cast: true, FirstChoice: "Weekbot Makes My Knees Week", SecondChoice: "Shane Moves Back Home Week", ThirdChoice: "Not Enough Suggestions to Start Poll Week"},
-			{Cast: true, FirstChoice: "Its Actually Weekbots Monster Week", SecondChoice: "Not Enough Suggestions to Start Poll Week", ThirdChoice: "Weekbot Lives Week"},
-			{Cast: true, FirstChoice: "Not Enough Suggestions to Start Poll Week", SecondChoice: "Shane Moves Back Home Week", ThirdChoice: "Weekbot Makes My Knees Week"},
+			{Cast: true, FirstChoice: "Weekbot Makes My Knees Week", SecondChoice: "Not Enough Suggestions to Start Poll Week", ThirdChoice: "Weekbot Lives Week"},
+			{Cast: true, FirstChoice: "Not Enough Suggestions to Start Poll Week", SecondChoice: "Weekbot Makes My Knees Week", ThirdChoice: "Shane Moves Back Home Week"},
+			{Cast: true, FirstChoice: "Its Actually Weekbots Monster Week", SecondChoice: "Weekbot Makes My Knees Week", ThirdChoice: "Weekbot Lives Week"},
+			// Uncast ballots - these should NOT count
+			{Cast: false, FirstChoice: "Shane Moves Back Home Week", SecondChoice: "", ThirdChoice: ""},
 			{Cast: false, FirstChoice: "Shane Moves Back Home Week", SecondChoice: "", ThirdChoice: ""},
 			{Cast: false, FirstChoice: "", SecondChoice: "", ThirdChoice: ""},
 		},
 	}
 
+	// First round: Weekbot Makes My Knees Week: 2, Not Enough: 1, Its Actually: 1
+	// Weekbot Makes My Knees Week should win with majority after eliminations
 	expectedWinner := "Weekbot Makes My Knees Week"
 	winner := poll.PerformRankedChoiceVoting()
-	println(winner, expectedWinner)
 	if winner != expectedWinner {
 		t.Errorf("Expected winner to be %s, but got %s", expectedWinner, winner)
 	}

@@ -31,6 +31,8 @@ func ParseInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			commands.HandleEndPoll(s, i)
 		case "listweeks":
 			commands.HandleListWeeks(s, i)
+		case "config":
+			commands.HandleConfigCommand(s, i)
 		default:
 			logger.Warn("Unknown command", "command", i.ApplicationCommandData().Name)
 		}
@@ -110,7 +112,8 @@ func HandleReactions(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 		return
 	}
 
-	if r.Emoji.Name == config.QualifyingEmoji && len(reaction) >= config.MinUpdicksToQualify() {
+	qualifyingEmoji := config.QualifyingEmojiForGuild(bot.DB, r.GuildID)
+	if r.Emoji.Name == qualifyingEmoji && len(reaction) >= config.MinUpdicksToQualify(bot.DB, r.GuildID) {
 		models.UpdateSuggestion(bot.DB, m.Content, r.GuildID, len(reaction))
 		s.MessageReactionAdd(r.ChannelID, r.MessageID, config.ConfirmationEmoji)
 	}
